@@ -1,0 +1,17 @@
+name: yolov3-tf2-gpu
+
+dependencies:
+  - python>=3.7
+  - pip
+  - matplotlib
+  - cudnn
+  - cudatoolkit>=10.1
+  - pip:
+    - tensorflow-gpu>=2.5.1
+    - opencv-python
+    - opencv-contrib-python
+    - lxml
+    - tqdm
+    - fastapi
+    - uvicorn
+    - -e .
