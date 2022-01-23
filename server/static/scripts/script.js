@@ -1,7 +1,10 @@
-const sayHello = async () => {
-    const response = await fetch('/hello', {
+const getBoundingBoxes = async (filename) => {
+    const response = await fetch('/get_bounding_boxes', {
       method: 'POST',
-      body: '{ "name": "Alice" }',
+      body: `{
+        "image_id": "img1",
+        "image_file_name": "${filename}"
+      }`,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -10,4 +13,4 @@ const sayHello = async () => {
     // extract JSON from the http response
     const resp = await response.json();
     return resp;
-}
+};

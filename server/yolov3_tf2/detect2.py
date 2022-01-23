@@ -4,11 +4,11 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
-from yolov3_tf2.models2 import (
+from yolov3_tf2.yolov3_tf2.models2 import (
     YoloV3, YoloV3Tiny
 )
-from yolov3_tf2.dataset import transform_images, load_tfrecord_dataset
-from yolov3_tf2.utils import draw_outputs
+from yolov3_tf2.yolov3_tf2.dataset import transform_images, load_tfrecord_dataset
+from yolov3_tf2.yolov3_tf2.utils import draw_outputs
 
 def detect(i_image_id: str, 
             i_image_path: str,

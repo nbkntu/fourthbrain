@@ -214,6 +214,23 @@
       drawBoundingBox(ctx, rect);
     }
 
+    function getAndDrawBoundingBox(ctx, filename) {
+      console.log(filename);
+      getBoundingBoxes(filename).then(
+        function(resp) {
+            console.log(resp);
+            rect.x1 = resp.bounding_box[0][0];
+            rect.y1 = resp.bounding_box[0][1];
+            rect.x2 = resp.bounding_box[0][2];
+            rect.y2 = resp.bounding_box[0][3];
+            console.log(rect);
+            drawBoundingBox(ctx, rect);
+        },
+        function(error) {
+            console.log("Error: ", error);
+        });
+    };
+
     function handleFileSelect(evt) {
         var files = evt.target.files; // FileList object
     
@@ -250,27 +267,16 @@
               // draw image html element onto canvas, keep image original size
               ctx.drawImage(img, 0, 0);
 
-              // get bounding box from server
-              drawBoundingBox(ctx, rect);
+              getAndDrawBoundingBox(ctx, theFile.name);        
             };
           };
         })(f);
     
         // Read in the image file as a data URL.
         reader.readAsDataURL(f);
-    }
+    };
 
     document.getElementById('input-file').addEventListener('change', handleFileSelect, false);
-
-    sayHello().then(
-        function(resp) {
-            console.log(resp.message);
-            $("#content").text(resp.message);
-        },
-        function(error) {
-            console.log("Error: ", error);
-        }
-    );
 </script>
 </body>
 </html>
