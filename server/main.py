@@ -5,14 +5,18 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
 from pydantic import BaseModel
 
-from yolov3_tf2 import detect2
+from yolov3_tf2 import yolov3_model
 
 
 
 app = FastAPI()
+
+yolo = yolov3_model.YoloV3Model(
+    i_classes='./yolov3_tf2/data/coco2.names',
+    i_yolo_max_boxes=1
+)
 
 app.mount("/css", StaticFiles(directory="static/css"), name="static-css")
 app.mount("/scripts", StaticFiles(directory="static/scripts"), name="static-scripts")
@@ -30,7 +34,8 @@ class GetBoundingBoxesRequest(BaseModel):
 @app.post('/get_bounding_boxes')
 def get_bounding_boxes(req: GetBoundingBoxesRequest):
     image_path = "./yolov3_tf2/data/" + req.image_file_name
-    boxes, scores, classes, nums, img_shape = detect2.detect(req.image_id, image_path, i_classes='./yolov3_tf2/data/coco2.names', i_yolo_max_boxes=1)
+    boxes, scores, classes, nums, img_shape = yolo.process(req.image_id, image_path)
+    
     npboxes = boxes.numpy()
     npboxes = npboxes.reshape((npboxes.shape[1], npboxes.shape[2]))
     for i in range(npboxes.shape[0]):
