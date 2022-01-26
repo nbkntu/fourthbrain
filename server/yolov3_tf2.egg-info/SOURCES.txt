@@ -1,0 +1,8 @@
+setup.py
+yolov3_tf2/convert.py
+yolov3_tf2/detect2.py
+yolov3_tf2/yolov3_model.py
+yolov3_tf2.egg-info/PKG-INFO
+yolov3_tf2.egg-info/SOURCES.txt
+yolov3_tf2.egg-info/dependency_links.txt
+yolov3_tf2.egg-info/top_level.txt

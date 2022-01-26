@@ -1,17 +1,27 @@
-name: yolov3-tf2-cpu
+name: smartannotation
 
 dependencies:
   - python>=3.7
   - pip
-  - matplotlib
   - cudnn
   - cudatoolkit>=10.1
+  - shapely
   - pip:
-    - tensorflow-cpu>=2.5.1
+    - tensorflow
     - opencv-python
     - opencv-contrib-python
     - lxml
     - tqdm
     - fastapi
     - uvicorn
+    - h5py
+    - imgaug
+    - ipython
+    - keras
+    - matplotlib
+    - numpy
+    - scikit_image
+    - scipy
+    - scikit-image
+    - Jinja2
     - -e .
