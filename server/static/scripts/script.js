@@ -41,7 +41,8 @@ class AppController {
     this.startX = parseInt(e.clientX - this.offsetX);
     this.startY = parseInt(e.clientY - this.offsetY);
 
-    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(this.appState.rect, this.appState.dotSize, this.startX, this.startY);
+    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
+        this.appState.rect, this.appState.dotSize, this.startX, this.startY);
     if (this.appState.rectPointIndex) {
       this.appState.isDown = true;
     }
