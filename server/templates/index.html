@@ -1,6 +1,5 @@
 <html>
 <head>
-    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="scripts/script.js"></script>
 
     <link rel="stylesheet" href="/css/style.css">
@@ -23,260 +22,61 @@
 </div>
 
 <script>
-    // set up canvas event handlers
-    $("#canvas").mousedown(function(e) { handleMouseDown(e); });
-    $("#canvas").mousemove(function(e) { handleMouseMove(e); });
-    $("#canvas").mouseup(function(e) { handleMouseUp(e);} );
-    $("#canvas").mouseout(function(e) { handleMouseOut(e); });
+    var appController = new AppController(
+      document.getElementById('canvas'),
+      document.getElementById('image-source')
+    );
 
-    // track coordinates
-    var offsetX, offsetY;
-    function resetOffset() {
-    var BB = canvas.getBoundingClientRect();
-        offsetX = BB.left;
-        offsetY = BB.top;        
-    }
-
-    resetOffset();
-    window.onscroll = function(e) { resetOffset(); }
-    window.onresize = function(e) { resetOffset(); }
-
-    const dotSize = 8;
-    var rect={
-        x1: 20,
-        y1: 20,
-        x2: 300,
-        y2: 200
-    }
-
-    // whether mouse is down
-    var isDown = false;
-    var rectPointIndex = null;
-
-    function drawPointRect(ctx, x, y, size) {
-      ctx.rect(
-          x - dotSize / 2,
-          y - dotSize / 2,
-          dotSize,
-          dotSize
-      );
-      ctx.stroke();
-    }
-
-    function drawBoundingBox(ctx, rect) {
-      // draw bounding box rectangle
-      ctx.strokeStyle = 'yellow';
-      ctx.beginPath();
-      ctx.rect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
-      ctx.stroke();
-
-      // draw corner boxes
-      drawPointRect(ctx, rect.x1, rect.y1, dotSize);
-      drawPointRect(ctx, rect.x1, rect.y2, dotSize);
-      drawPointRect(ctx, rect.x2, rect.y1, dotSize);
-      drawPointRect(ctx, rect.x2, rect.y2, dotSize);
-    }
-
-    function inClickRange(x0, y0, dotSize, x, y) {
-      const x1 = x0 - dotSize/2;
-      const x2 = x0 + dotSize/2;
-      const y1 = y0 - dotSize/2;
-      const y2 = y0 + dotSize/2;
-      if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
-        return true;
-      }
-      return false;
-    };
-
-    function getPointClicked(x, y) {
-      // console.log('click coordinates: ', x, y);
-      if (inClickRange(rect.x1, rect.y1, dotSize, x, y)) {
-        return 1;
-      }
-      if (inClickRange(rect.x2, rect.y1, dotSize, x, y)) {
-        return 2;
-      }
-      if (inClickRange(rect.x1, rect.y2, dotSize, x, y)) {
-        return 3;
-      }
-      if (inClickRange(rect.x2, rect.y2, dotSize, x, y)) {
-        return 4;
-      }
-      return null;
-    };
-
-    function handleMouseDown(e){
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-    
-      // record mouse start position
-      startX = parseInt(e.clientX - offsetX);
-      startY = parseInt(e.clientY - offsetY);
-    
-      // 1 2
-      // 3 4
-      rectPointIndex = getPointClicked(startX, startY);
-      if (rectPointIndex) {
-        //console.log("select corner:", rectPointIndex);
-        isDown = true;
-      }
-    }
-
-    function updateRectCoordinates(rectPointIndex, dx, dy) {
-      if (!rectPointIndex) {
-        return;
-      }
-      switch(rectPointIndex) {
-        case 1:
-          rect.x1 += dx;
-          rect.y1 += dy;
-          break;
-        case 2:
-          rect.x2 += dx;
-          rect.y1 += dy;
-          break;
-        case 3:
-          rect.x1 += dx;
-          rect.y2 += dy;
-          break;
-        case 4:
-          rect.x2 += dx;
-          rect.y2 += dy;
-          break;
-      }
-    };
-
-    function handleMouseMove(e){
-      if (!isDown) {
-        return;
-      }
-    
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-    
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-    
-      // calculate move distance
-      var dx = mouseX - startX;
-      var dy = mouseY - startY;
-      // update mouse start position
-      startX = mouseX;
-      startY = mouseY;
-    
-      // update rect coordinates
-      updateRectCoordinates(rectPointIndex, dx, dy);
-    
-      draw();
-    };
-
-    function handleMouseUp(e){
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-    
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-    
-      draw();
-    
-      // Put your mouseup stuff here
-      isDown = false;
-    }
-
-    function handleMouseOut(e){
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-
-      // Put your mouseOut stuff here
-      isDown = false;
-    }
-
-    function draw() {
-      const canvas = document.getElementById('canvas');
-
-      // clear canvas
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      var img = document.getElementById('image-source');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      // draw image html element onto canvas, keep image original size
-      ctx.drawImage(img, 0, 0);
-
-      drawBoundingBox(ctx, rect);
-    }
-
-    function getAndDrawBoundingBox(ctx, filename) {
-      console.log(filename);
-      getBoundingBoxes(filename).then(
-        function(resp) {
-            console.log(resp);
-            rect.x1 = resp.bounding_box[0][0];
-            rect.y1 = resp.bounding_box[0][1];
-            rect.x2 = resp.bounding_box[0][2];
-            rect.y2 = resp.bounding_box[0][3];
-            console.log(rect);
-            drawBoundingBox(ctx, rect);
-        },
-        function(error) {
-            console.log("Error: ", error);
-        });
-    };
+    window.onscroll = function(e) { appController.resetOffset(); }
+    window.onresize = function(e) { appController.resetOffset(); }
 
     function handleFileSelect(evt) {
-        var files = evt.target.files; // FileList object
-    
-        // Loop through the FileList and render image files as thumbnails.
-        f = files[0];
-    
-        // Only process image files.
-        if (!f.type.match('image.*')) {
-          return;
-        }
-  
-        var reader = new FileReader();
-  
-        // Closure to capture the file information.
-        reader.onload = (function(theFile) {
-          return function(e) {
-            // render local image into html element
-            var img = document.getElementById('image-source');
-            img.src = e.target.result;
-  
-            // wait for image to be loaded, then draw on the canvas
-            img.onload = function() {
-              const canvas = document.getElementById('canvas');
-  
-              // clear canvas
-              const ctx = canvas.getContext('2d');
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-              // reset canvas size
-              console.log('image size: ', img.naturalWidth, img.naturalHeight)
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-  
-              // draw image html element onto canvas, keep image original size
-              ctx.drawImage(img, 0, 0);
+      var files = evt.target.files; // FileList object
 
-              getAndDrawBoundingBox(ctx, theFile.name);        
-            };
+      // Loop through the FileList and render image files as thumbnails.
+      f = files[0];
+
+      // Only process image files.
+      if (!f.type.match('image.*')) {
+        return;
+      }
+
+      var reader = new FileReader();
+
+      // Closure to capture the file information.
+      reader.onload = (function(theFile) {
+        return function(e) {
+          // render local image into html element
+          var img = document.getElementById('image-source');
+          img.src = e.target.result;
+
+          // wait for image to be loaded, then draw on the canvas
+          img.onload = function() {
+            const canvas = document.getElementById('canvas');
+
+            // clear canvas
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // reset canvas size
+            console.log('image size: ', img.naturalWidth, img.naturalHeight)
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+
+            // draw image html element onto canvas, keep image original size
+            ctx.drawImage(img, 0, 0);
+
+            appController.getBoundingBox(ctx, theFile.name);
           };
-        })(f);
-    
-        // Read in the image file as a data URL.
-        reader.readAsDataURL(f);
-    };
+        };
+      })(f);
 
-    document.getElementById('input-file').addEventListener('change', handleFileSelect, false);
+      // Read in the image file as a data URL.
+      reader.readAsDataURL(f);
+  };
+
+  document.getElementById('input-file')
+      .addEventListener('change', handleFileSelect, false);
 </script>
 </body>
 </html>
