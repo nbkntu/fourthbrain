@@ -93,7 +93,11 @@ class AppController {
     this.startY = mouseY;
 
     // update rect coordinates
-    this.appState.updateRectCoordinates(dx, dy);
+    if (this.appState.annotationMode == 'bounding-box') {
+      this.appState.updateRectCoordinates(dx, dy);
+    } else if (this.appState.annotationMode == 'contour') {
+      this.appState.updatePolyCoordinates(dx, dy);
+    }
 
     this.draw();
   }
@@ -337,6 +341,14 @@ class AppState {
         rect.y2 += dy;
         break;
     }
+  };
+
+  updatePolyCoordinates(dx, dy) {
+    if (this.polyPointIndex == null) {
+      return;
+    }
+    this.poly.points[this.polyPointIndex].x += dx;
+    this.poly.points[this.polyPointIndex].y += dy;
   };
 
   removePolyPoint(poly, pointIndex) {
