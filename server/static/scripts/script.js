@@ -1,6 +1,7 @@
 class AppController {
   constructor(canvasEl, imageEl) {
     this.appState = new AppState();
+    this.canvasUtil = new CanvasUtil();
 
     this.canvasEl = canvasEl;
     this.setupCanvasEvents();
@@ -9,24 +10,26 @@ class AppController {
     this.offsetY = 0;
     this.resetOffset();
 
-    this.imageEl = imageEl;
+    this.startX = 0;
+    this.startY = 0;
 
-    this.canvasUtil = new CanvasUtil();
+    this.imageEl = imageEl;
   }
 
   // reset offset coordinates of canvas element
   resetOffset() {
     var box = canvas.getBoundingClientRect();
     this.offsetX = box.left;
-    this.appStateoffsetY = box.top;
+    this.offsetY = box.top;
   }
 
   setupCanvasEvents() {
-    this.canvasEl.onmousedown = this.handleMouseDown;
-    this.canvasEl.onmousemove = this.handleMouseMove;
-    this.canvasEl.onmouseup = this.handleMouseUp;
-    this.canvasEl.onmouseout = this.handleMouseOut;
-    this.canvasEl.ondblclick = this.handleDoubleClick;
+    const that = this;
+    this.canvasEl.onmousedown = function(e) { that.handleMouseDown(e) };
+    this.canvasEl.onmousemove = function(e) { that.handleMouseMove(e) };
+    this.canvasEl.onmouseup = function(e) { that.handleMouseUp(e) };
+    this.canvasEl.onmouseout = function(e) { that.handleMouseOut(e) };
+    this.canvasEl.ondblclick = function(e) { that.handleDoubleClick(e) };
   }
 
   handleMouseDown(e) {
@@ -35,13 +38,13 @@ class AppController {
     e.stopPropagation();
 
     // record mouse start position
-    var startX = parseInt(e.clientX - this.offsetX);
-    var startY = parseInt(e.clientY - this.offsetY);
+    this.startX = parseInt(e.clientX - this.offsetX);
+    this.startY = parseInt(e.clientY - this.offsetY);
 
-    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(this.appState.rect, startX, startY);
+    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(this.appState.rect, this.appState.dotSize, this.startX, this.startY);
+    console.log(this.appState.rectPointIndex);
     if (this.appState.rectPointIndex) {
       this.appState.isDown = true;
-      console.log(this.appState.isDown);
     }
   }
 
@@ -49,6 +52,26 @@ class AppController {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    if (!(this.appState && this.appState.isDown)) {
+      return;
+    }
+
+    const mouseX = parseInt(e.clientX - this.offsetX);
+    const mouseY = parseInt(e.clientY - this.offsetY);
+
+    // calculate move distance
+    const dx = mouseX - this.startX;
+    const dy = mouseY - this.startY;
+
+    // update mouse start position
+    this.startX = mouseX;
+    this.startY = mouseY;
+
+    // update rect coordinates
+    this.appState.updateRectCoordinates(dx, dy);
+
+    this.draw();
   }
 
   handleMouseUp(e) {
@@ -74,10 +97,6 @@ class AppController {
 
     // clear canvas
     this.canvasUtil.clearRect(ctx, 0, 0, canvas.width, canvas.height);
-
-    // reset canvas size
-    canvas.width = this.imageEl.naturalWidth;
-    canvas.height = this.imageEl.naturalHeight;
 
     // draw image html element onto canvas, keep image original size
     this.canvasUtil.drawImage(ctx, this.imageEl, 0, 0);
@@ -110,7 +129,6 @@ class AppController {
     console.log(resp);
 
     var rect = this.appState.rect;
-
     rect.x1 = resp.bounding_box[0][0];
     rect.y1 = resp.bounding_box[0][1];
     rect.x2 = resp.bounding_box[0][2];
@@ -188,25 +206,25 @@ class CanvasUtil {
     const x2 = x0 + dotSize/2;
     const y1 = y0 - dotSize/2;
     const y2 = y0 + dotSize/2;
-    if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
+    if (x1 <= x && x <= x2 && y1 <= y && y <= y2) {
       return true;
     }
     return false;
   };
 
-  getPointClicked(rect, x, y) {
+  getPointClicked(rect, dotSize, x, y) {
     // 1 2
     // 3 4
-    if (inClickRange(rect.x1, rect.y1, dotSize, x, y)) {
+    if (this.inClickRange(rect.x1, rect.y1, dotSize, x, y)) {
       return 1;
     }
-    if (inClickRange(rect.x2, rect.y1, dotSize, x, y)) {
+    if (this.inClickRange(rect.x2, rect.y1, dotSize, x, y)) {
       return 2;
     }
-    if (inClickRange(rect.x1, rect.y2, dotSize, x, y)) {
+    if (this.inClickRange(rect.x1, rect.y2, dotSize, x, y)) {
       return 3;
     }
-    if (inClickRange(rect.x2, rect.y2, dotSize, x, y)) {
+    if (this.inClickRange(rect.x2, rect.y2, dotSize, x, y)) {
       return 4;
     }
     return null;
@@ -244,6 +262,7 @@ class AppState {
     if (!this.rectPointIndex) {
       return;
     }
+    var rect = this.rect;
     switch(this.rectPointIndex) {
       case 1:
         rect.x1 += dx;
