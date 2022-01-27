@@ -41,10 +41,34 @@ class AppController {
     this.startX = parseInt(e.clientX - this.offsetX);
     this.startY = parseInt(e.clientY - this.offsetY);
 
-    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
-        this.appState.rect, this.appState.dotSize, this.startX, this.startY);
-    if (this.appState.rectPointIndex) {
-      this.appState.isDown = true;
+    if (this.appState.annotationMode == 'bounding-box') {
+      // bounding-box mode
+      this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
+          this.appState.rect, this.appState.dotSize, this.startX, this.startY);
+      if (this.appState.rectPointIndex != null) {
+        this.appState.isDown = true;
+      }
+    } if (this.appState.annotationMode == 'contour') {
+      // contour polygon mode
+      if (e.button == 0) {  // left click
+        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
+            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
+        if (this.appState.polyPointIndex != null){
+          this.appState.isDown=true;
+        }
+      } else if (e.button == 2) {  // right click
+        // either add or remove points
+        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
+            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
+        if (this.appState.polyPointIndex != null) {
+          // right-click on a point -> remove it
+          this.appState.removePolyPoint(this.appState.poly, this.appState.polyPointIndex);
+        } else {
+          this.appState.addPolyPoint(this.appState.poly, this.startX, this.startY);
+        }
+
+        this.draw();
+      }
     }
   }
 
@@ -248,6 +272,19 @@ class CanvasUtil {
     }
     return null;
   };
+
+  getPointClickedPolygon(poly, dotSize, x, y) {
+    for (var i = 0; i < poly.points.length; i++) {
+      const x1 = poly.points[i].x - dotSize/2;
+      const x2 = poly.points[i].x + dotSize/2;
+      const y1 = poly.points[i].y - dotSize/2;
+      const y2 = poly.points[i].y + dotSize/2;
+      if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
+        return i;
+      }
+    }
+    return null;
+  }
 };
 
 class AppState {
@@ -301,6 +338,30 @@ class AppState {
         break;
     }
   };
+
+  removePolyPoint(poly, pointIndex) {
+    if (poly.points.length <= 3) {
+      return;
+    }
+
+    poly.points.splice(pointIndex, 1);
+  }
+
+  addPolyPoint(poly, x, y) {
+    var insertIndex = -1;
+    var minSquareDistance = -1;
+    for (var i = 0; i < poly.points.length; i++) {
+      var i1 = (i + 1) % poly.points.length;
+      var sqDist = Math.pow(x - poly.points[i].x, 2) + Math.pow(y - poly.points[i].y, 2)
+          + Math.pow(x - poly.points[i1].x, 2) + Math.pow(y - poly.points[i1].y, 2);
+      if (minSquareDistance == -1 || minSquareDistance > sqDist) {
+        minSquareDistance = sqDist;
+        insertIndex = i1;
+      }
+    }
+
+    poly.points.splice(insertIndex, 0, {x: x, y: y});
+  }
 };
 
 
