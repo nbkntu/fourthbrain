@@ -130,11 +130,13 @@ class AppController {
 
     // double click inside bounding box rectangle
     const rect = this.appState.rect;
-    if (mouseX >= rect.x1 && mouseX <= rect.x2
-      && mouseY >= rect.y1 && mouseY <= rect.y2) {
-        // switch to polygon mode
-        this.appState.annotationMode = 'contour';
-        this.draw();
+    if (this.appState.annotationMode == 'bounding-box') {
+      if (mouseX >= rect.x1 && mouseX <= rect.x2
+        && mouseY >= rect.y1 && mouseY <= rect.y2) {
+          // switch to polygon mode
+          this.appState.annotationMode = 'contour';
+          this.draw();
+      }
     }
 
     // Put your mouseup stuff here
@@ -314,7 +316,34 @@ class AppState {
 
     // contour polygon
     this.poly = {
-      points:[ {x:175, y:75}, {x:250, y:150}, {x:175, y:225}, {x:100, y:180} ],
+      points:[
+        {x: 144, y: 147},
+        {x: 180, y: 128},
+        {x: 205, y: 110},
+        {x: 216, y: 123},
+        {x: 310, y: 54},
+        {x: 406, y: 45},
+        {x: 509, y: 45},
+        {x: 594, y: 72},
+        {x: 658, y: 119},
+        {x: 652, y: 209},
+        {x: 643, y: 308},
+        {x: 597, y: 295},
+        {x: 577, y: 306},
+        {x: 546, y: 310},
+        {x: 487, y: 328},
+        {x: 418, y: 351},
+        {x: 369, y: 337},
+        {x: 252, y: 330},
+        {x: 167, y: 319},
+        {x: 145, y: 317},
+        {x: 122, y: 338},
+        {x: 93, y: 333},
+        {x: 71, y: 307},
+        {x: 62, y: 267},
+        {x: 67, y: 214},
+        {x: 97, y: 171}
+      ],
     }
   }
 
