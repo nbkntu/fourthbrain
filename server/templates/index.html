@@ -30,57 +30,6 @@
     window.onscroll = function(e) { appController.resetOffset(); }
     window.onresize = function(e) { appController.resetOffset(); }
 
-    function handleMouseMove(e){
-      if (!isDown) {
-        return;
-      }
-
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-
-      // calculate move distance
-      var dx = mouseX - startX;
-      var dy = mouseY - startY;
-      // update mouse start position
-      startX = mouseX;
-      startY = mouseY;
-
-      // update rect coordinates
-      updateRectCoordinates(rectPointIndex, dx, dy);
-
-      draw();
-    };
-
-    function handleMouseUp(e){
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-
-      draw();
-
-      // Put your mouseup stuff here
-      isDown = false;
-    }
-
-    function handleMouseOut(e){
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-
-      // Put your mouseOut stuff here
-      isDown = false;
-    }
-
     function handleDoubleClick(e){
       console.log('doubleclick');
       // tell the browser we're handling this event

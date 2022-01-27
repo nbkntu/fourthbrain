@@ -42,7 +42,6 @@ class AppController {
     this.startY = parseInt(e.clientY - this.offsetY);
 
     this.appState.rectPointIndex = this.canvasUtil.getPointClicked(this.appState.rect, this.appState.dotSize, this.startX, this.startY);
-    console.log(this.appState.rectPointIndex);
     if (this.appState.rectPointIndex) {
       this.appState.isDown = true;
     }
@@ -78,12 +77,18 @@ class AppController {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    // Put your mouseup stuff here
+    this.appState.isDown = false;
   }
 
   handleMouseOut(e) {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    // Put your mouseOut stuff here
+    this.appState.isDown = false;
   }
 
   handleDoubleClick(e) {
