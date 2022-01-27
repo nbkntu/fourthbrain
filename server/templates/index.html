@@ -22,7 +22,7 @@
 </div>
 
 <script>
-    $("#canvas").contextmenu(function(e) { e.preventDefault(); return false; });
+    document.getElementById('canvas').oncontextmenu = function(e) { e.preventDefault(); return false; };
 
     var appController = new AppController(
       document.getElementById('canvas'),
