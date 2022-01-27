@@ -30,29 +30,6 @@
     window.onscroll = function(e) { appController.resetOffset(); }
     window.onresize = function(e) { appController.resetOffset(); }
 
-    function handleDoubleClick(e){
-      console.log('doubleclick');
-      // tell the browser we're handling this event
-      e.preventDefault();
-      e.stopPropagation();
-
-      mouseX = parseInt(e.clientX - offsetX);
-      mouseY = parseInt(e.clientY - offsetY);
-
-      console.log(mouseX, mouseY);
-      console.log(rect);
-
-      if (mouseX >= rect.x1 && mouseX <= rect.x2
-        && mouseY >= rect.y1 && mouseY <= rect.y2) {
-          console.log('polygon mode');
-          annotationMode = 'polygon';
-          draw();
-      }
-
-      // Put your mouseup stuff here
-      isDown = false;
-    }
-
     function handleFileSelect(evt) {
       var files = evt.target.files; // FileList object
 

@@ -95,6 +95,21 @@ class AppController {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    const mouseX = parseInt(e.clientX - this.offsetX);
+    const mouseY = parseInt(e.clientY - this.offsetY);
+
+    // double click inside bounding box rectangle
+    const rect = this.appState.rect;
+    if (mouseX >= rect.x1 && mouseX <= rect.x2
+      && mouseY >= rect.y1 && mouseY <= rect.y2) {
+        // switch to polygon mode
+        this.appState.annotationMode = 'contour';
+        this.draw();
+    }
+
+    // Put your mouseup stuff here
+    this.appState.isDown = false;
   }
 
   draw() {
@@ -109,7 +124,7 @@ class AppController {
     if (this.appState.annotationMode == 'bounding-box') {
       this.canvasUtil.drawBoundingBox(ctx, this.appState.rect, this.appState.dotSize);
     } else if (this.appState.annotationMode == 'contour') {
-      this.canvasUtil.drawContour(ctx, this.appState.poly);
+      this.canvasUtil.drawContour(ctx, this.appState.poly, this.appState.dotSize);
     }
   }
 
@@ -189,20 +204,18 @@ class CanvasUtil {
     ctx.beginPath();  // need this for clearRect to work
 
     ctx.moveTo(poly.points[0].x,poly.points[0].y);
-    for (var i=0; i < poly.points.length; i++) {
+    for (var i = 0; i < poly.points.length; i++) {
       ctx.lineTo(poly.points[i].x,poly.points[i].y);
     }
     ctx.lineTo(poly.points[0].x, poly.points[0].y);
 
     ctx.strokeStyle = 'yellow';
-    ctx.lineWidth=1;
-
     ctx.stroke();
 
     // draw corner boxes
-    for(var i=0; i < poly.points.length; i++) {
+    for (var i = 0; i < poly.points.length; i++) {
       // draw rectangle at the points
-      drawPointRect(ctx, poly.points[i].x, poly.points[i].y, dotSize);
+      this.drawPointRect(ctx, poly.points[i].x, poly.points[i].y, dotSize);
     }
   }
 
@@ -257,7 +270,7 @@ class AppState {
       y2: 200
     };
 
-    // polygon contour
+    // contour polygon
     this.poly = {
       points:[ {x:175, y:75}, {x:250, y:150}, {x:175, y:225}, {x:100, y:180} ],
     }
