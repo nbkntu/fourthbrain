@@ -22,6 +22,8 @@
 </div>
 
 <script>
+    $("#canvas").contextmenu(function(e) { e.preventDefault(); return false; });
+
     var appController = new AppController(
       document.getElementById('canvas'),
       document.getElementById('image-source')
