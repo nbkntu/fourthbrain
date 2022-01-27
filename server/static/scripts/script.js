@@ -41,10 +41,34 @@ class AppController {
     this.startX = parseInt(e.clientX - this.offsetX);
     this.startY = parseInt(e.clientY - this.offsetY);
 
-    this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
-        this.appState.rect, this.appState.dotSize, this.startX, this.startY);
-    if (this.appState.rectPointIndex) {
-      this.appState.isDown = true;
+    if (this.appState.annotationMode == 'bounding-box') {
+      // bounding-box mode
+      this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
+          this.appState.rect, this.appState.dotSize, this.startX, this.startY);
+      if (this.appState.rectPointIndex != null) {
+        this.appState.isDown = true;
+      }
+    } if (this.appState.annotationMode == 'contour') {
+      // contour polygon mode
+      if (e.button == 0) {  // left click
+        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
+            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
+        if (this.appState.polyPointIndex != null){
+          this.appState.isDown=true;
+        }
+      } else if (e.button == 2) {  // right click
+        // either add or remove points
+        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
+            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
+        if (this.appState.polyPointIndex != null) {
+          // right-click on a point -> remove it
+          this.appState.removePolyPoint(this.appState.poly, this.appState.polyPointIndex);
+        } else {
+          this.appState.addPolyPoint(this.appState.poly, this.startX, this.startY);
+        }
+
+        this.draw();
+      }
     }
   }
 
@@ -69,7 +93,11 @@ class AppController {
     this.startY = mouseY;
 
     // update rect coordinates
-    this.appState.updateRectCoordinates(dx, dy);
+    if (this.appState.annotationMode == 'bounding-box') {
+      this.appState.updateRectCoordinates(dx, dy);
+    } else if (this.appState.annotationMode == 'contour') {
+      this.appState.updatePolyCoordinates(dx, dy);
+    }
 
     this.draw();
   }
@@ -102,11 +130,13 @@ class AppController {
 
     // double click inside bounding box rectangle
     const rect = this.appState.rect;
-    if (mouseX >= rect.x1 && mouseX <= rect.x2
-      && mouseY >= rect.y1 && mouseY <= rect.y2) {
-        // switch to polygon mode
-        this.appState.annotationMode = 'contour';
-        this.draw();
+    if (this.appState.annotationMode == 'bounding-box') {
+      if (mouseX >= rect.x1 && mouseX <= rect.x2
+        && mouseY >= rect.y1 && mouseY <= rect.y2) {
+          // switch to polygon mode
+          this.appState.annotationMode = 'contour';
+          this.draw();
+      }
     }
 
     // Put your mouseup stuff here
@@ -248,6 +278,19 @@ class CanvasUtil {
     }
     return null;
   };
+
+  getPointClickedPolygon(poly, dotSize, x, y) {
+    for (var i = 0; i < poly.points.length; i++) {
+      const x1 = poly.points[i].x - dotSize/2;
+      const x2 = poly.points[i].x + dotSize/2;
+      const y1 = poly.points[i].y - dotSize/2;
+      const y2 = poly.points[i].y + dotSize/2;
+      if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
+        return i;
+      }
+    }
+    return null;
+  }
 };
 
 class AppState {
@@ -273,7 +316,34 @@ class AppState {
 
     // contour polygon
     this.poly = {
-      points:[ {x:175, y:75}, {x:250, y:150}, {x:175, y:225}, {x:100, y:180} ],
+      points:[
+        {x: 144, y: 147},
+        {x: 180, y: 128},
+        {x: 205, y: 110},
+        {x: 216, y: 123},
+        {x: 310, y: 54},
+        {x: 406, y: 45},
+        {x: 509, y: 45},
+        {x: 594, y: 72},
+        {x: 658, y: 119},
+        {x: 652, y: 209},
+        {x: 643, y: 308},
+        {x: 597, y: 295},
+        {x: 577, y: 306},
+        {x: 546, y: 310},
+        {x: 487, y: 328},
+        {x: 418, y: 351},
+        {x: 369, y: 337},
+        {x: 252, y: 330},
+        {x: 167, y: 319},
+        {x: 145, y: 317},
+        {x: 122, y: 338},
+        {x: 93, y: 333},
+        {x: 71, y: 307},
+        {x: 62, y: 267},
+        {x: 67, y: 214},
+        {x: 97, y: 171}
+      ],
     }
   }
 
@@ -301,6 +371,38 @@ class AppState {
         break;
     }
   };
+
+  updatePolyCoordinates(dx, dy) {
+    if (this.polyPointIndex == null) {
+      return;
+    }
+    this.poly.points[this.polyPointIndex].x += dx;
+    this.poly.points[this.polyPointIndex].y += dy;
+  };
+
+  removePolyPoint(poly, pointIndex) {
+    if (poly.points.length <= 3) {
+      return;
+    }
+
+    poly.points.splice(pointIndex, 1);
+  }
+
+  addPolyPoint(poly, x, y) {
+    var insertIndex = -1;
+    var minSquareDistance = -1;
+    for (var i = 0; i < poly.points.length; i++) {
+      var i1 = (i + 1) % poly.points.length;
+      var sqDist = Math.pow(x - poly.points[i].x, 2) + Math.pow(y - poly.points[i].y, 2)
+          + Math.pow(x - poly.points[i1].x, 2) + Math.pow(y - poly.points[i1].y, 2);
+      if (minSquareDistance == -1 || minSquareDistance > sqDist) {
+        minSquareDistance = sqDist;
+        insertIndex = i1;
+      }
+    }
+
+    poly.points.splice(insertIndex, 0, {x: x, y: y});
+  }
 };
 
 
