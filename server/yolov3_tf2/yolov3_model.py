@@ -42,7 +42,7 @@ class YoloV3Model:
                 i_image_id: str, 
                 i_image_path: str,
                 i_size=416,
-                i_output='./yolov3_tf2/output.jpg'):
+                i_output='./data/bounding_boxes.jpg'):
 
         img_raw = tf.image.decode_image(
             open(i_image_path, 'rb').read(), channels=3)
@@ -66,4 +66,4 @@ class YoloV3Model:
         cv2.imwrite(i_output, img)
         logging.info('output saved to: {}'.format(i_output))
 
-        return boxes, scores, classes, nums, img.shape
+        return boxes, scores, classes + 1, nums, img.shape
