@@ -135,7 +135,9 @@ class AppController {
         && mouseY >= rect.y1 && mouseY <= rect.y2) {
           // switch to polygon mode
           this.appState.annotationMode = 'contour';
-          this.draw();
+
+          // get object boundary
+          this.getObjectBoundary(this.appState.filename, this.appState.rect, this.appState.objectClass);
       }
     }
 
@@ -164,8 +166,11 @@ class AppController {
     return canvas.getContext('2d');
   }
 
-  getBoundingBox(ctx, filename) {
+  getBoundingBox(filename) {
     console.log(filename);
+
+    this.appState.filename = filename;
+
     var that = this;
     getBoundingBoxes(filename).then(
       function(resp) {
@@ -184,10 +189,43 @@ class AppController {
     rect.y1 = resp.bounding_box[0][1];
     rect.x2 = resp.bounding_box[0][2];
     rect.y2 = resp.bounding_box[0][3];
-
     console.log(rect);
 
+    this.appState.objectClass = resp.classes[0];
+
     this.appState.annotationMode = 'bounding-box';
+
+    this.draw();
+  }
+
+  getObjectBoundary(filename, boundingBox, objectClass) {
+    console.log(filename);
+
+    var that = this;
+    getObjectBoundaries(filename, boundingBox, objectClass).then(
+      function(resp) {
+          that.getObjectBoundaryCallback(resp);
+      },
+      function(error) {
+          console.log("Error: ", error);
+      });
+  }
+
+  getObjectBoundaryCallback(resp) {
+    console.log(resp);
+
+    var points = [];
+
+    resp.simple_mask_polygon.forEach((p) => {
+      var point = {
+        x: p[0],
+        y: p[1]
+      }
+      points.push(point);
+    });
+
+    console.log(points);
+    this.appState.poly.points = points;
 
     this.draw();
   }
@@ -234,9 +272,9 @@ class CanvasUtil {
     // draw polygon
     ctx.beginPath();  // need this for clearRect to work
 
-    ctx.moveTo(poly.points[0].x,poly.points[0].y);
+    ctx.moveTo(poly.points[0].x, poly.points[0].y);
     for (var i = 0; i < poly.points.length; i++) {
-      ctx.lineTo(poly.points[i].x,poly.points[i].y);
+      ctx.lineTo(poly.points[i].x, poly.points[i].y);
     }
     ctx.lineTo(poly.points[0].x, poly.points[0].y);
 
@@ -297,6 +335,8 @@ class AppState {
   constructor() {
     this.isDown = false;
 
+    this.filename = '';
+
     // currently seelected point index of bounding box rectangle
     this.rectPointIndex = null;
 
@@ -305,6 +345,8 @@ class AppState {
 
     // size of control rectangle
     this.dotSize = 8;
+
+    this.objectClass = '';
 
     // bounding box rectangle
     this.rect = {
@@ -421,4 +463,24 @@ const getBoundingBoxes = async (filename) => {
     // extract JSON from the http response
     const resp = await response.json();
     return resp;
+};
+
+
+const getObjectBoundaries = async (filename, boundingBox, objectClass) => {
+  const response = await fetch('/get_object_boundary', {
+    method: 'POST',
+    body: `{
+      "image_id": "img1",
+      "image_file_name": "${filename}",
+      "bounding_box": [${boundingBox.x1}, ${boundingBox.y1}, ${boundingBox.x2}, ${boundingBox.y2}],
+      "class_of_interest": ${objectClass}
+    }`,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // extract JSON from the http response
+  const resp = await response.json();
+  return resp;
 };
