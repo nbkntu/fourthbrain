@@ -66,10 +66,9 @@ def get_bounding_boxes(req: GetBoundingBoxesRequest):
 @app.post('/get_object_boundary')
 def get_object_boundary(req: GetObjectBoundaryRequest):
     image_path = "./data/" + req.image_file_name
-    full_mask = mask_rcnn.predict(image_path, req.bounding_box, req.class_of_interest)
-    print("returned = ", full_mask.shape)
+    full_mask, simple_mask_polygon = mask_rcnn.predict(image_path, req.bounding_box, req.class_of_interest)
 
     return {
         'message': f'image id: {req.image_id}, image path: {image_path}',
-        #'mask': full_mask.tolist()
+        'simple_mask_polygon': simple_mask_polygon.tolist()
     }
