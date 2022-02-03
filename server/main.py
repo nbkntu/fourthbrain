@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from matplotlib import pyplot as plt
 
 from yolov3_tf2 import yolov3_model
 from mask_rcnn import maskrcnn_model
