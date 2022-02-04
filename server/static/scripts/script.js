@@ -43,23 +43,22 @@ class AppController {
 
     if (this.appState.annotationMode == 'bounding-box') {
       // bounding-box mode
-      this.appState.rectPointIndex = this.canvasUtil.getPointClicked(
-          this.appState.rect, this.appState.dotSize, this.startX, this.startY);
-      if (this.appState.rectPointIndex != null) {
+      this.appState.updateRectAndPointClicked(this.startX, this.startY);
+      if (this.appState.selectedRectIndex != null && this.appState.rectPointIndex != null) {
         this.appState.isDown = true;
       }
     } if (this.appState.annotationMode == 'contour') {
       // contour polygon mode
       if (e.button == 0) {  // left click
-        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
-            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
+        this.appState.updatePolygonPointClicked(this.startX, this.startY);
         if (this.appState.polyPointIndex != null){
-          this.appState.isDown=true;
+          this.appState.isDown = true;
+        } else {
+          this.appState.isDown = false;
         }
       } else if (e.button == 2) {  // right click
+        this.appState.updatePolygonPointClicked(this.startX, this.startY);
         // either add or remove points
-        this.appState.polyPointIndex = this.canvasUtil.getPointClickedPolygon(
-            this.appState.poly, this.appState.dotSize, this.startX, this.startY);
         if (this.appState.polyPointIndex != null) {
           // right-click on a point -> remove it
           this.appState.removePolyPoint(this.appState.poly, this.appState.polyPointIndex);
@@ -129,16 +128,23 @@ class AppController {
     const mouseY = parseInt(e.clientY - this.offsetY);
 
     // double click inside bounding box rectangle
-    const rect = this.appState.rect;
     if (this.appState.annotationMode == 'bounding-box') {
-      if (mouseX >= rect.x1 && mouseX <= rect.x2
-        && mouseY >= rect.y1 && mouseY <= rect.y2) {
-          // switch to polygon mode
-          this.appState.annotationMode = 'contour';
-
-          // get object boundary
-          this.getObjectBoundary(this.appState.filename, this.appState.rect, this.appState.objectClass);
+      var rectIds = this.appState.getRectContains(mouseX, mouseY);
+      if (!rectIds || !rectIds.length) {
+        return;
       }
+      if (rectIds.length > 1) {
+        console.log('more than one bounding boxes contain the point');
+        return;
+      }
+
+      const rid = rectIds[0];
+      const rect = this.appState.rects[rid];
+      const objectClass = this.appState.objectClasses[rid];
+      // switch to polygon mode
+      this.appState.annotationMode = 'contour';
+      // get object boundary
+      this.getObjectBoundary(this.appState.filename, rect, objectClass);
     }
 
     // Put your mouseup stuff here
@@ -155,7 +161,7 @@ class AppController {
     this.canvasUtil.drawImage(ctx, this.imageEl, 0, 0);
 
     if (this.appState.annotationMode == 'bounding-box') {
-      this.canvasUtil.drawBoundingBox(ctx, this.appState.rect, this.appState.dotSize);
+      this.canvasUtil.drawBoundingBoxes(ctx, this.appState.rects, this.appState.dotSize);
     } else if (this.appState.annotationMode == 'contour') {
       this.canvasUtil.drawContour(ctx, this.appState.poly, this.appState.dotSize);
     }
@@ -166,32 +172,43 @@ class AppController {
     return canvas.getContext('2d');
   }
 
-  getBoundingBox(filename) {
+  startGetBoundingBox(filename) {
     console.log(filename);
 
     this.appState.filename = filename;
 
+    this.appState.annotationMode = 'bounding-box';
+
     var that = this;
     getBoundingBoxes(filename).then(
       function(resp) {
-          that.getBoundingBoxCallback(resp);
+          that.getBoundingBoxesCallback(resp);
       },
       function(error) {
           console.log("Error: ", error);
       });
   }
 
-  getBoundingBoxCallback(resp) {
+  getBoundingBoxesCallback(resp) {
     console.log(resp);
 
-    var rect = this.appState.rect;
-    rect.x1 = resp.bounding_box[0][0];
-    rect.y1 = resp.bounding_box[0][1];
-    rect.x2 = resp.bounding_box[0][2];
-    rect.y2 = resp.bounding_box[0][3];
-    console.log(rect);
-
-    this.appState.objectClass = resp.classes[0];
+    if (resp.bounding_box && resp.bounding_box.length) {
+      var rects = [];
+      resp.bounding_box.forEach((bb) => {
+        const rect = {
+          x1: bb[0],
+          y1: bb[1],
+          x2: bb[2],
+          y2: bb[3]
+        }
+        rects.push(rect);
+      });
+      console.log(rects);
+      this.appState.rects = rects;
+      this.appState.objectClasses = resp.classes;
+    } else {
+      console.log('no bounding boxes');
+    }
 
     this.appState.annotationMode = 'bounding-box';
 
@@ -266,6 +283,14 @@ class CanvasUtil {
     this.drawPointRect(ctx, rect.x2, rect.y2, dotSize);
   }
 
+  drawBoundingBoxes(ctx, rects, dotSize) {
+    if (rects && rects.length) {
+      rects.forEach((rect) => {
+        this.drawBoundingBox(ctx, rect, dotSize);
+      });
+    }
+  }
+
   drawContour(ctx, poly, dotSize) {
     ctx.beginPath();
 
@@ -287,48 +312,6 @@ class CanvasUtil {
       this.drawPointRect(ctx, poly.points[i].x, poly.points[i].y, dotSize);
     }
   }
-
-  inClickRange(x0, y0, dotSize, x, y) {
-    const x1 = x0 - dotSize/2;
-    const x2 = x0 + dotSize/2;
-    const y1 = y0 - dotSize/2;
-    const y2 = y0 + dotSize/2;
-    if (x1 <= x && x <= x2 && y1 <= y && y <= y2) {
-      return true;
-    }
-    return false;
-  };
-
-  getPointClicked(rect, dotSize, x, y) {
-    // 1 2
-    // 3 4
-    if (this.inClickRange(rect.x1, rect.y1, dotSize, x, y)) {
-      return 1;
-    }
-    if (this.inClickRange(rect.x2, rect.y1, dotSize, x, y)) {
-      return 2;
-    }
-    if (this.inClickRange(rect.x1, rect.y2, dotSize, x, y)) {
-      return 3;
-    }
-    if (this.inClickRange(rect.x2, rect.y2, dotSize, x, y)) {
-      return 4;
-    }
-    return null;
-  };
-
-  getPointClickedPolygon(poly, dotSize, x, y) {
-    for (var i = 0; i < poly.points.length; i++) {
-      const x1 = poly.points[i].x - dotSize/2;
-      const x2 = poly.points[i].x + dotSize/2;
-      const y1 = poly.points[i].y - dotSize/2;
-      const y2 = poly.points[i].y + dotSize/2;
-      if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
-        return i;
-      }
-    }
-    return null;
-  }
 };
 
 class AppState {
@@ -336,6 +319,9 @@ class AppState {
     this.isDown = false;
 
     this.filename = '';
+
+    // selected bounding box rectangle
+    this.selectedRectIndex = null;
 
     // currently seelected point index of bounding box rectangle
     this.rectPointIndex = null;
@@ -346,15 +332,15 @@ class AppState {
     // size of control rectangle
     this.dotSize = 8;
 
-    this.objectClass = '';
+    this.objectClasses = [];
 
-    // bounding box rectangle
-    this.rect = {
+    // bounding box rectangles
+    this.rects = [{
       x1: 20,
       y1: 20,
       x2: 300,
       y2: 200
-    };
+    }];
 
     // contour polygon
     this.poly = {
@@ -390,10 +376,10 @@ class AppState {
   }
 
   updateRectCoordinates(dx, dy) {
-    if (!this.rectPointIndex) {
+    if (this.selectedRectIndex == null || this.rectPointIndex == null) {
       return;
     }
-    var rect = this.rect;
+    var rect = this.rects[this.selectedRectIndex];
     switch(this.rectPointIndex) {
       case 1:
         rect.x1 += dx;
@@ -444,6 +430,75 @@ class AppState {
     }
 
     poly.points.splice(insertIndex, 0, {x: x, y: y});
+  }
+
+  inClickRange(x0, y0, dotSize, x, y) {
+    const x1 = x0 - dotSize/2;
+    const x2 = x0 + dotSize/2;
+    const y1 = y0 - dotSize/2;
+    const y2 = y0 + dotSize/2;
+    if (x1 <= x && x <= x2 && y1 <= y && y <= y2) {
+      return true;
+    }
+    return false;
+  };
+
+  getPointClicked(rect, dotSize, x, y) {
+    // 1 2
+    // 3 4
+    if (this.inClickRange(rect.x1, rect.y1, dotSize, x, y)) {
+      return 1;
+    }
+    if (this.inClickRange(rect.x2, rect.y1, dotSize, x, y)) {
+      return 2;
+    }
+    if (this.inClickRange(rect.x1, rect.y2, dotSize, x, y)) {
+      return 3;
+    }
+    if (this.inClickRange(rect.x2, rect.y2, dotSize, x, y)) {
+      return 4;
+    }
+    return null;
+  };
+
+  updateRectAndPointClicked(x, y) {
+    for (var i = 0; i < this.rects.length; i++) {
+      const p = this.getPointClicked(this.rects[i], this.dotSize, x, y);
+      if (p != null) {
+        this.selectedRectIndex = i;
+        this.rectPointIndex = p;
+        return;
+      }
+    }
+    this.selectedRectIndex = null;
+    this.rectPointIndex = null;
+  }
+
+  updatePolygonPointClicked(x, y) {
+    const poly = this.poly;
+    const dotSize = this.dotSize;
+
+    for (var i = 0; i < poly.points.length; i++) {
+      const x1 = poly.points[i].x - dotSize/2;
+      const x2 = poly.points[i].x + dotSize/2;
+      const y1 = poly.points[i].y - dotSize/2;
+      const y2 = poly.points[i].y + dotSize/2;
+      if (x1 <= x && x2 >= x && y1 <= y && y2 >= y) {
+        this.polyPointIndex = i;
+        return;
+      }
+    }
+    this.polyPointIndex = null;
+  }
+
+  getRectContains(x, y) {
+    var rectIds = [];
+    this.rects.forEach((rect, i) => {
+      if (rect.x1 <= x && rect.x2 >=x && rect.y1 <= y && rect.y2 >= y) {
+        rectIds.push(i);
+      }
+    });
+    return rectIds;
   }
 };
 
