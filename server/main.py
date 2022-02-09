@@ -20,7 +20,6 @@ mask_rcnn = maskrcnn_model.MaskRCNNModel(
     i_weights='./mask_rcnn/model/mask_rcnn_coco.h5',
     i_logs='./mask_rcnn/logs/'
 )
-mask_rcnn.download_model()
 
 app = FastAPI()
 

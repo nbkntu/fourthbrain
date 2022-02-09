@@ -11,12 +11,7 @@ $ conda env create -f conda-cpu.yml
 
 - Download YOLOv3 pre-trained model
 https://pjreddie.com/media/files/yolov3.weights
-and put in under `server/yolov3_tf2/data`
-
-- Then run convert.py
-```
-$ cd server/yolov3_tf
-$ python convert.py --weights ./data/yolov3.weights --output ./checkpoints/yolov3.tf
+and put in under `server/yolov3_tf2/model`
 ```
 
 ### Mask RCNN setup

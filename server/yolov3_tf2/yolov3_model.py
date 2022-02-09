@@ -1,7 +1,11 @@
-import time
 import cv2
+import glob
 import numpy as np
+import os
+import shutil
 import tensorflow as tf
+import time
+import urllib
 
 from absl import app, flags, logging
 from absl.flags import FLAGS
@@ -11,16 +15,22 @@ from yolov3_tf2.yolov3_tf2.models2 import (
 )
 from yolov3_tf2.yolov3_tf2.dataset import transform_images
 from yolov3_tf2.yolov3_tf2.utils import draw_outputs
+from yolov3_tf2.yolov3_tf2.utils import load_darknet_weights
+
+YOLOV3_COCO_MODEL_URL = 'https://pjreddie.com/media/files/yolov3.weights'
+
 
 class YoloV3Model:
     def __init__(self,
                 i_classes='./yolov3_tf2/data/coco.names',
-                i_weights='./yolov3_tf2/checkpoints/yolov3.tf',
+                i_weights='./yolov3_tf2/model/yolov3.weights',
                 i_tiny=False,
                 i_num_classes=80,
                 i_yolo_max_boxes=100,
                 i_yolo_iou_threshold=0.5,
                 i_yolo_score_threshold=0.5):
+
+        self.download_model(i_weights)
 
         physical_devices = tf.config.experimental.list_physical_devices('GPU')
         for physical_device in physical_devices:
@@ -31,11 +41,18 @@ class YoloV3Model:
         else:
             self.yolo = YoloV3(i_yolo_max_boxes, i_yolo_iou_threshold, i_yolo_score_threshold, classes=i_num_classes)
 
-        self.yolo.load_weights(i_weights).expect_partial()
+        load_darknet_weights(self.yolo, i_weights, i_tiny)
         logging.info('weights loaded')
 
         self.class_names = [c.strip() for c in open(i_classes).readlines()]
         logging.info('classes loaded')
+
+
+    def download_model(self, i_weights):
+        # Download COCO trained weights from Releases if needed
+        if not os.path.exists(i_weights):
+            with urllib.request.urlopen(YOLOV3_COCO_MODEL_URL) as resp, open(i_weights, 'wb') as out:
+                shutil.copyfileobj(resp, out)
 
 
     def process(self,

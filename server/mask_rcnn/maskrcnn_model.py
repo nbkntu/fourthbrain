@@ -19,35 +19,35 @@ class MaskRCNNModel:
                 i_classes='./config/coco.names',
                 i_weights='./mask_rcnn/model/mask_rcnn_coco.h5',
                 i_logs='./mask_rcnn/logs/'):
-                self.i_classes = i_classes
-                self.i_weights = i_weights
-                self.i_logs = i_logs
+        self.i_classes = i_classes
+        self.i_weights = i_weights
+        self.i_logs = i_logs
 
-                self.download_model()
+        # download model weights
+        self.download_model(i_weights)
 
-    def download_model(self):
+        # create model object in inference mode.
+        config = InferenceConfig()
+        self.model = modellib.MaskRCNN(mode="inference", model_dir=self.i_logs, config=config)
+        # load weights trained on MS-COCO
+        self.model.load_weights(self.i_weights, by_name=True)
+
+    def download_model(self, i_weights):
         # Download COCO trained weights from Releases if needed
-        if not os.path.exists(self.i_weights):
-            utils.download_trained_weights(self.i_weights)
+        if not os.path.exists(i_weights):
+            utils.download_trained_weights(i_weights)
 
     def predict(self,
                 i_image_path: str,
                 i_bounding_box: list,
                 i_class_of_interest: int):
-        config = InferenceConfig()
-    
-        # create model object in inference mode.
-        model = modellib.MaskRCNN(mode="inference", model_dir=self.i_logs, config=config)
 
-        # load weights trained on MS-COCO
-        model.load_weights(self.i_weights, by_name=True)
-    
         # load an image from the images folder
         image = skimage.io.imread(i_image_path)
         bounding_box_image = image[i_bounding_box[1]:i_bounding_box[3] + 1, i_bounding_box[0]:i_bounding_box[2] + 1, :]
 
         # run detection
-        results = model.detect([bounding_box_image], verbose=1)
+        results = self.model.detect([bounding_box_image], verbose=1)
         indexes = np.where(results[0]['class_ids'] == i_class_of_interest)
         if len(indexes) > 0:
             s = results[0]['masks'].shape
@@ -91,5 +91,5 @@ class MaskRCNNModel:
             plt.scatter(x, y, color='r', s=5)
 
         plt.savefig("./data/contour.jpg")
-        
+
         return simple_mask_polygon
