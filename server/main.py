@@ -47,7 +47,7 @@ class GetObjectBoundaryRequest(BaseModel):
 def get_bounding_boxes(req: GetBoundingBoxesRequest):
     image_path = "./data/" + req.image_file_name
     boxes, scores, classes, nums, img_shape = yolo.process(req.image_id, image_path)
-    
+
     npboxes = boxes.numpy()
     npboxes = npboxes.reshape((npboxes.shape[1], npboxes.shape[2]))
     for i in range(npboxes.shape[0]):
@@ -55,7 +55,7 @@ def get_bounding_boxes(req: GetBoundingBoxesRequest):
         npboxes[i][1] = int(npboxes[i][1]*img_shape[0])
         npboxes[i][2] = int(npboxes[i][2]*img_shape[1])
         npboxes[i][3] = int(npboxes[i][3]*img_shape[0])
-    
+
     return {
         'message': f'image id: {req.image_id}, image path: {image_path}',
         'bounding_box': npboxes.tolist(),

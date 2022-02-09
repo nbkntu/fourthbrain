@@ -1,5 +1,4 @@
-__pycache__/
-smart_annotation.egg-info/
+
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
