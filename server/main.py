@@ -10,9 +10,6 @@ from pydantic import BaseModel
 from yolov3_tf2 import yolov3_model
 from mask_rcnn import maskrcnn_model
 
-
-app = FastAPI()
-
 yolo = yolov3_model.YoloV3Model(
     i_classes='./config/coco.names',
     i_yolo_max_boxes=10
@@ -23,6 +20,9 @@ mask_rcnn = maskrcnn_model.MaskRCNNModel(
     i_weights='./mask_rcnn/model/mask_rcnn_coco.h5',
     i_logs='./mask_rcnn/logs/'
 )
+mask_rcnn.download_model()
+
+app = FastAPI()
 
 app.mount("/css", StaticFiles(directory="static/css"), name="static-css")
 app.mount("/scripts", StaticFiles(directory="static/scripts"), name="static-scripts")

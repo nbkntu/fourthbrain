@@ -1,4 +1,3 @@
 __pycache__/
-smart_annotation.egg-info/
+*.egg-info/
 mask_rcnn_coco.h5
-

@@ -21,11 +21,11 @@ class YoloV3Model:
                 i_yolo_max_boxes=100,
                 i_yolo_iou_threshold=0.5,
                 i_yolo_score_threshold=0.5):
-        
+
         physical_devices = tf.config.experimental.list_physical_devices('GPU')
         for physical_device in physical_devices:
-            tf.config.experimental.set_memory_growth(physical_device, True)    
-        
+            tf.config.experimental.set_memory_growth(physical_device, True)
+
         if i_tiny:
             self.yolo = YoloV3Tiny(i_yolo_max_boxes, i_yolo_iou_threshold, i_yolo_score_threshold, classes=i_num_classes)
         else:
@@ -33,7 +33,7 @@ class YoloV3Model:
 
         self.yolo.load_weights(i_weights).expect_partial()
         logging.info('weights loaded')
-        
+
         self.class_names = [c.strip() for c in open(i_classes).readlines()]
         logging.info('classes loaded')
 
