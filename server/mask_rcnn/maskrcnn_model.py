@@ -28,7 +28,7 @@ class MaskRCNNModel:
 
         # create model object in inference mode.
         config = InferenceConfig()
-        self.model = modellib.MaskRCNN(mode="inference", model_dir=self.i_logs, config=config)
+        self.model = modellib.MaskRCNN(mode='inference', model_dir=self.i_logs, config=config)
         # load weights trained on MS-COCO
         self.model.load_weights(self.i_weights, by_name=True)
 
