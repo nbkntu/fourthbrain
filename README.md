@@ -53,7 +53,7 @@ $ eb deploy smart-application-test
 
 - get instance logs
 ```
-$ eb deploy smart-application-test
+$ eb logs smart-application-test
 ```
 
 - terminate instance
