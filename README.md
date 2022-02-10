@@ -1,9 +1,10 @@
-# fourthbrain
+# fourthbrain capstone project
 
-## server
+## smart annotation server
 
-### YOLOv3 setup
-- Install dependencies with conda
+### Local
+#### YOLOv3 setup
+- Install dependencies with conda (conda environment "smartannotation" will be created)
 ```
 $ cd server
 $ conda env create -f conda-cpu.yml
@@ -14,13 +15,48 @@ https://pjreddie.com/media/files/yolov3.weights
 and put in under `server/yolov3_tf2/model`
 ```
 
-### Mask RCNN setup
+#### Mask RCNN setup
 - Download Mask RCNN pre-trained model
 https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5
 and put in under `server/mask_rcnn/model`
 
-- Launch server
+#### Launch server locally
 ```
 $ cd server
+$ conda activate smartannotation
 $ uvicorn main:app --reload
+```
+
+### Deploy to Elastic Beanstalk
+
+Make sure ebcli has already been installed.
+
+```
+$ cd server
+```
+
+- create CPU instance
+```
+$ eb create smart-application-test --instance_type=t2.large
+```
+
+- create GPU instance
+```
+$ eb create smart-application-gpu-test --instance_type=p2.xlarge
+
+```
+
+- redeploy the server content
+```
+$ eb deploy smart-application-test
+```
+
+- get instance logs
+```
+$ eb deploy smart-application-test
+```
+
+- terminate instance
+```
+$ eb terminiate smart-application-test
 ```
