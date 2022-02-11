@@ -31,6 +31,7 @@ class YoloV3Model:
                 i_yolo_score_threshold=0.5):
 
         self.download_model(i_weights)
+        self.i_num_classes = i_num_classes
 
         physical_devices = tf.config.experimental.list_physical_devices('GPU')
         for physical_device in physical_devices:
@@ -84,3 +85,49 @@ class YoloV3Model:
         logging.info('output saved to: {}'.format(i_output))
 
         return boxes, scores, classes + 1, nums, img.shape
+
+    def non_maximum_suppression(self,
+                                boxes,
+                                classes):
+        new_boxes = np.empty((0, 4), int)
+        new_classes = np.empty((0, 1), int)
+        for i in range(1, self.i_num_classes + 1):
+            indices = np.argwhere(classes == i)
+            if (len(indices) > 0):
+                filtered_boxes = self.NMS(boxes[indices].reshape((boxes[indices].shape[0], boxes[indices].shape[2])))
+                new_boxes = np.append(new_boxes, filtered_boxes, axis=0)
+                new_classes = np.append(new_classes, np.full(filtered_boxes.shape[0], i))
+
+        return new_boxes, new_classes
+
+    def NMS(self, boxes, overlapThresh = 0.4):
+        # Return an empty list, if no boxes given
+        if len(boxes) == 0:
+            return []
+        x1 = boxes[:, 0]  # x coordinate of the top-left corner
+        y1 = boxes[:, 1]  # y coordinate of the top-left corner
+        x2 = boxes[:, 2]  # x coordinate of the bottom-right corner
+        y2 = boxes[:, 3]  # y coordinate of the bottom-right corner
+        # Compute the area of the bounding boxes and sort the bounding
+        # Boxes by the bottom-right y-coordinate of the bounding box
+        areas = (x2 - x1 + 1) * (y2 - y1 + 1) # We add 1, because the pixel at the start as well as at the end counts
+        # The indices of all boxes at start. We will redundant indices one by one.
+        indices = np.arange(len(x1))
+        for i,box in enumerate(boxes):
+            # Create temporary indices  
+            temp_indices = indices[indices!=i]
+            # Find out the coordinates of the intersection box
+            xx1 = np.maximum(box[0], boxes[temp_indices,0])
+            yy1 = np.maximum(box[1], boxes[temp_indices,1])
+            xx2 = np.minimum(box[2], boxes[temp_indices,2])
+            yy2 = np.minimum(box[3], boxes[temp_indices,3])
+            # Find out the width and the height of the intersection box
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+            # compute the ratio of overlap
+            overlap = (w * h) / areas[temp_indices]
+            # if the actual boungding box has an overlap bigger than treshold with any other box, remove it's index  
+            if np.any(overlap) > overlapThresh:
+                indices = indices[indices != i]
+        #return only the boxes at the remaining indices
+        return boxes[indices].astype(int)
