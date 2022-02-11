@@ -1,6 +1,7 @@
 import uvicorn
 import subprocess
 import os
+from shapely.geometry import Polygon
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -42,6 +43,16 @@ class GetObjectBoundaryRequest(BaseModel):
     bounding_box: list
     class_of_interest: int
 
+class GetPolygonIOURequest(BaseModel):
+    image_id: str
+    predicted_polygon: list
+    ground_truth_polygon: list
+
+class GetBoundingBoxIOURequest(BaseModel):
+    image_id: str
+    predicted_bounding_box: list
+    ground_truth_bounding_box: list
+
 @app.post('/get_bounding_boxes')
 def get_bounding_boxes(req: GetBoundingBoxesRequest):
     image_path = "./data/" + req.image_file_name
@@ -72,4 +83,35 @@ def get_object_boundary(req: GetObjectBoundaryRequest):
     return {
         'message': f'image id: {req.image_id}, image path: {image_path}',
         'simple_mask_polygon': simple_mask_polygon.tolist()
+    }
+
+@app.post('/get_polygon_IOU')
+def get_polygon_IOU(req: GetPolygonIOURequest):
+    ground_truth_points = [tuple(x) for x in req.ground_truth_polygon]
+    predicted_points = [tuple(x) for x in req.predicted_polygon]
+    ground_truth_polygon = Polygon(ground_truth_points)
+    predicted_polygon = Polygon(predicted_points)
+    IOU = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
+
+    return {
+        'message': f'image id: {req.image_id}',
+        'IOU': IOU
+    }
+
+@app.post('/get_bounding_box_IOU')
+def get_bounding_box_IOU(req: GetBoundingBoxIOURequest):
+    gt_tl = [req.ground_truth_bounding_box[0], req.ground_truth_bounding_box[1]]
+    gt_br = [req.ground_truth_bounding_box[2], req.ground_truth_bounding_box[3]]
+    ground_truth_points = [(gt_tl[0], gt_tl[1]), (gt_br[0], gt_tl[1]), (gt_br[0], gt_br[1]), (gt_tl[0], gt_br[1])]
+    p_tl = [req.predicted_bounding_box[0], req.predicted_bounding_box[1]]
+    p_br = [req.predicted_bounding_box[2], req.predicted_bounding_box[3]]
+    predicted_points = [(p_tl[0], p_tl[1]), (p_br[0], p_tl[1]), (p_br[0], p_br[1]), (p_tl[0], p_br[1])]
+    
+    ground_truth_polygon = Polygon(ground_truth_points)
+    predicted_polygon = Polygon(predicted_points)
+    IOU = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
+
+    return {
+        'message': f'image id: {req.image_id}',
+        'IOU': IOU
     }
