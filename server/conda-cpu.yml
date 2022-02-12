@@ -23,5 +23,6 @@ dependencies:
     - scikit_image
     - scipy
     - scikit-image
+    - shapely
     - Jinja2
     - -e .
