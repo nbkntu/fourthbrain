@@ -37,26 +37,26 @@ $ cd server
 
 - create CPU instance
 ```
-$ eb create smart-application-test --instance_type=t2.large
+$ eb create smart-annotation-test --instance_type=t2.large
 ```
 
 - create GPU instance
 ```
-$ eb create smart-application-gpu-test --instance_type=p2.xlarge
+$ eb create smart-annotation-gpu-test --instance_type=p2.xlarge
 
 ```
 
 - redeploy the server content
 ```
-$ eb deploy smart-application-test
+$ eb deploy smart-annotation-test
 ```
 
 - get instance logs
 ```
-$ eb logs smart-application-test
+$ eb logs smart-annotation-test
 ```
 
 - terminate instance
 ```
-$ eb terminiate smart-application-test
+$ eb terminiate smart-annotation-test
 ```
