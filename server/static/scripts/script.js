@@ -204,8 +204,11 @@ class AppController {
         rects.push(rect);
       });
       console.log(rects);
+
       this.appState.rects = rects;
       this.appState.objectClasses = resp.classes;
+      // deep copy
+      this.appState.orgRects= JSON.parse(JSON.stringify(rects));
     } else {
       console.log('no bounding boxes');
     }
@@ -243,6 +246,8 @@ class AppController {
 
     console.log(points);
     this.appState.poly.points = points;
+    // deep copy
+    this.appState.orgPoly= JSON.parse(JSON.stringify(points));
 
     this.draw();
   }
@@ -334,6 +339,9 @@ class AppState {
 
     this.objectClasses = [];
 
+    // original bounding boxes
+    this.orgRects = [];
+
     // bounding box rectangles
     this.rects = [{
       x1: 20,
@@ -341,6 +349,12 @@ class AppState {
       x2: 300,
       y2: 200
     }];
+
+    // map object that track number of changes for bounding boxes
+    this.rectsChanges = {};
+
+    // original contour polygon
+    this.orgPoly = {};
 
     // contour polygon
     this.poly = {
@@ -373,6 +387,13 @@ class AppState {
         {x: 97, y: 171}
       ],
     }
+
+    // track poly changes
+    this.polyChanges = {
+      move: 0,
+      add: 0,
+      delete: 0
+    };
   }
 
   updateRectCoordinates(dx, dy) {
