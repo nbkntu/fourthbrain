@@ -62,8 +62,10 @@ class AppController {
         if (this.appState.polyPointIndex != null) {
           // right-click on a point -> remove it
           this.appState.removePolyPoint(this.appState.poly, this.appState.polyPointIndex);
+          this.appState.trackPolyChanges('remove');
         } else {
           this.appState.addPolyPoint(this.appState.poly, this.startX, this.startY);
+          this.appState.trackPolyChanges('add');
         }
 
         this.draw();
@@ -105,6 +107,15 @@ class AppController {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    if (this.appState.isDown) {
+      // update rect coordinates
+      if (this.appState.annotationMode == 'bounding-box') {
+        this.appState.trackRectChanges();
+      } else if (this.appState.annotationMode == 'contour') {
+        this.appState.trackPolyChanges('move');
+      }
+    }
 
     // Put your mouseup stuff here
     this.appState.isDown = false;
@@ -351,7 +362,7 @@ class AppState {
     }];
 
     // map object that track number of changes for bounding boxes
-    this.rectsChanges = {};
+    this.rectChanges = {};
 
     // original contour polygon
     this.orgPoly = {};
@@ -421,6 +432,18 @@ class AppState {
     }
   };
 
+  trackRectChanges() {
+    if (this.selectedRectIndex == null || this.rectPointIndex == null) {
+      return;
+    }
+    // track changes
+    if (this.selectedRectIndex in this.rectChanges) {
+      this.rectChanges[this.selectedRectIndex] += 1;
+    } else {
+      this.rectChanges[this.selectedRectIndex] = 1;
+    }
+  }
+
   updatePolyCoordinates(dx, dy) {
     if (this.polyPointIndex == null) {
       return;
@@ -451,6 +474,20 @@ class AppState {
     }
 
     poly.points.splice(insertIndex, 0, {x: x, y: y});
+  }
+
+  trackPolyChanges(changeType) {
+    switch (changeType) {
+      case 'move':
+        this.polyChanges.move += 1;
+        return;
+      case 'add':
+        this.polyChanges.add += 1;
+        return;
+      case 'remove':
+        this.polyChanges.delete += 1;
+        return;
+    }
   }
 
   inClickRange(x0, y0, dotSize, x, y) {
