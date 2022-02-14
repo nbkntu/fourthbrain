@@ -55,22 +55,22 @@ def submit_result(req: SubmitResultRequest):
         'status': 'Success',
     }
 
-@app.post('/get_polygon_IOU')
+@app.post('/get_polygon_iou')
 def get_polygon_IOU(req: GetPolygonMetricsRequest):
-    IOU = get_polygon_iou_helper(req)
+    iou = get_polygon_iou_helper(req)
 
     return {
         'message': f'image id: {req.image_id}',
-        'IOU': IOU
+        'iou': iou
     }
 
-@app.post('/get_bounding_box_IOU')
+@app.post('/get_bounding_box_iou')
 def get_bounding_box_IOU(req: GetBoundingBoxMetricsRequest):
-    IOU = get_bounding_box_iou_helper(req)
+    iou = get_bounding_box_iou_helper(req)
 
     return {
         'message': f'image id: {req.image_id}',
-        'IOU': IOU
+        'iou': iou
     }
 
 @app.post('/get_polygon_number_of_changes')
