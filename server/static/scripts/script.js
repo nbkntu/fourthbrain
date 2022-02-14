@@ -1,10 +1,13 @@
 class AppController {
-  constructor(canvasEl, imageEl) {
+  constructor(canvasEl, imageEl, submitButtonEl) {
     this.appState = new AppState();
     this.canvasUtil = new CanvasUtil();
 
     this.canvasEl = canvasEl;
     this.setupCanvasEvents();
+
+    this.submitButtonEl = submitButtonEl;
+    this.setupSubmitButtonEvents();
 
     this.offsetX = 0;
     this.offsetY = 0;
@@ -18,7 +21,7 @@ class AppController {
 
   // reset offset coordinates of canvas element
   resetOffset() {
-    var box = canvas.getBoundingClientRect();
+    var box = this.canvasEl.getBoundingClientRect();
     this.offsetX = box.left;
     this.offsetY = box.top;
   }
@@ -32,6 +35,11 @@ class AppController {
     this.canvasEl.ondblclick = function(e) { that.handleDoubleClick(e) };
   }
 
+  setupSubmitButtonEvents() {
+    const that = this;
+    this.submitButtonEl.onclick = function(e) { that.handleSubmitButtonClick(e) };
+  }
+
   handleMouseDown(e) {
     // tell the browser we're handling this event
     e.preventDefault();
@@ -41,13 +49,13 @@ class AppController {
     this.startX = parseInt(e.clientX - this.offsetX);
     this.startY = parseInt(e.clientY - this.offsetY);
 
-    if (this.appState.annotationMode == 'bounding-box') {
+    if (this.appState.annotationState == AnnotationState.BOUNDING_BOX) {
       // bounding-box mode
       this.appState.updateRectAndPointClicked(this.startX, this.startY);
       if (this.appState.selectedRectIndex != null && this.appState.rectPointIndex != null) {
         this.appState.isDown = true;
       }
-    } if (this.appState.annotationMode == 'contour') {
+    } if (this.appState.annotationState == AnnotationState.POLYGON) {
       // contour polygon mode
       if (e.button == 0) {  // left click
         this.appState.updatePolygonPointClicked(this.startX, this.startY);
@@ -62,8 +70,10 @@ class AppController {
         if (this.appState.polyPointIndex != null) {
           // right-click on a point -> remove it
           this.appState.removePolyPoint(this.appState.poly, this.appState.polyPointIndex);
+          this.appState.trackPolyChanges('remove');
         } else {
           this.appState.addPolyPoint(this.appState.poly, this.startX, this.startY);
+          this.appState.trackPolyChanges('add');
         }
 
         this.draw();
@@ -92,9 +102,9 @@ class AppController {
     this.startY = mouseY;
 
     // update rect coordinates
-    if (this.appState.annotationMode == 'bounding-box') {
+    if (this.appState.annotationState == AnnotationState.BOUNDING_BOX) {
       this.appState.updateRectCoordinates(dx, dy);
-    } else if (this.appState.annotationMode == 'contour') {
+    } else if (this.appState.annotationState == AnnotationState.POLYGON) {
       this.appState.updatePolyCoordinates(dx, dy);
     }
 
@@ -105,6 +115,15 @@ class AppController {
     // tell the browser we're handling this event
     e.preventDefault();
     e.stopPropagation();
+
+    if (this.appState.isDown) {
+      // update rect coordinates
+      if (this.appState.annotationState == AnnotationState.BOUNDING_BOX) {
+        this.appState.trackRectChanges();
+      } else if (this.appState.annotationState == AnnotationState.POLYGON) {
+        this.appState.trackPolyChanges('move');
+      }
+    }
 
     // Put your mouseup stuff here
     this.appState.isDown = false;
@@ -128,7 +147,7 @@ class AppController {
     const mouseY = parseInt(e.clientY - this.offsetY);
 
     // double click inside bounding box rectangle
-    if (this.appState.annotationMode == 'bounding-box') {
+    if (this.appState.annotationState == AnnotationState.BOUNDING_BOX) {
       var rectIds = this.appState.getRectContains(mouseX, mouseY);
       if (!rectIds || !rectIds.length) {
         return;
@@ -141,14 +160,23 @@ class AppController {
       const rid = rectIds[0];
       const rect = this.appState.rects[rid];
       const objectClass = this.appState.objectClasses[rid];
+      // save selected bounding box
+      this.appState.selectedRectIndex = rid;
       // switch to polygon mode
-      this.appState.annotationMode = 'contour';
+      this.appState.annotationState = AnnotationState.POLYGON;
       // get object boundary
       this.getObjectBoundary(this.appState.filename, rect, objectClass);
     }
 
     // Put your mouseup stuff here
     this.appState.isDown = false;
+  }
+
+  handleSubmitButtonClick(e) {
+    const result = this.appState.getAnnotationResult();
+    console.log(result);
+
+    this.appState.annotationState = AnnotationState.DONE;
   }
 
   draw() {
@@ -160,9 +188,9 @@ class AppController {
     // draw image html element onto canvas, keep image original size
     this.canvasUtil.drawImage(ctx, this.imageEl, 0, 0);
 
-    if (this.appState.annotationMode == 'bounding-box') {
+    if (this.appState.annotationState == AnnotationState.BOUNDING_BOX) {
       this.canvasUtil.drawBoundingBoxes(ctx, this.appState.rects, this.appState.dotSize);
-    } else if (this.appState.annotationMode == 'contour') {
+    } else if (this.appState.annotationState == AnnotationState.POLYGON) {
       this.canvasUtil.drawContour(ctx, this.appState.poly, this.appState.dotSize);
     }
   }
@@ -176,8 +204,6 @@ class AppController {
     console.log(filename);
 
     this.appState.filename = filename;
-
-    this.appState.annotationMode = 'bounding-box';
 
     var that = this;
     getBoundingBoxes(filename).then(
@@ -204,13 +230,16 @@ class AppController {
         rects.push(rect);
       });
       console.log(rects);
+
       this.appState.rects = rects;
       this.appState.objectClasses = resp.classes;
+      // deep copy
+      this.appState.orgRects= JSON.parse(JSON.stringify(this.appState.rects));
     } else {
       console.log('no bounding boxes');
     }
 
-    this.appState.annotationMode = 'bounding-box';
+    this.appState.annotationState = AnnotationState.BOUNDING_BOX;
 
     this.draw();
   }
@@ -243,6 +272,8 @@ class AppController {
 
     console.log(points);
     this.appState.poly.points = points;
+    // deep copy
+    this.appState.orgPoly= JSON.parse(JSON.stringify(this.appState.poly));
 
     this.draw();
   }
@@ -326,13 +357,15 @@ class AppState {
     // currently seelected point index of bounding box rectangle
     this.rectPointIndex = null;
 
-    // current mode: 'ready' / 'bounding-box' / 'polygon'
-    this.annotationMode = 'ready';
+    this.annotationState = AnnotationState.START;
 
     // size of control rectangle
     this.dotSize = 8;
 
     this.objectClasses = [];
+
+    // original bounding boxes
+    this.orgRects = [];
 
     // bounding box rectangles
     this.rects = [{
@@ -341,6 +374,12 @@ class AppState {
       x2: 300,
       y2: 200
     }];
+
+    // map object that track number of changes for bounding boxes
+    this.rectChanges = {};
+
+    // original contour polygon
+    this.orgPoly = {};
 
     // contour polygon
     this.poly = {
@@ -373,6 +412,13 @@ class AppState {
         {x: 97, y: 171}
       ],
     }
+
+    // track poly changes
+    this.polyChanges = {
+      move: 0,
+      add: 0,
+      delete: 0
+    };
   }
 
   updateRectCoordinates(dx, dy) {
@@ -399,6 +445,18 @@ class AppState {
         break;
     }
   };
+
+  trackRectChanges() {
+    if (this.selectedRectIndex == null || this.rectPointIndex == null) {
+      return;
+    }
+    // track changes
+    if (this.selectedRectIndex in this.rectChanges) {
+      this.rectChanges[this.selectedRectIndex] += 1;
+    } else {
+      this.rectChanges[this.selectedRectIndex] = 1;
+    }
+  }
 
   updatePolyCoordinates(dx, dy) {
     if (this.polyPointIndex == null) {
@@ -430,6 +488,20 @@ class AppState {
     }
 
     poly.points.splice(insertIndex, 0, {x: x, y: y});
+  }
+
+  trackPolyChanges(changeType) {
+    switch (changeType) {
+      case 'move':
+        this.polyChanges.move += 1;
+        return;
+      case 'add':
+        this.polyChanges.add += 1;
+        return;
+      case 'remove':
+        this.polyChanges.delete += 1;
+        return;
+    }
   }
 
   inClickRange(x0, y0, dotSize, x, y) {
@@ -500,7 +572,27 @@ class AppState {
     });
     return rectIds;
   }
+
+  getAnnotationResult() {
+    return {
+      object_class: this.objectClasses[this.selectedRectIndex],
+      original_bounding_box: this.orgRects[this.selectedRectIndex],
+      original_polygon: this.orgPoly,
+      bounding_box: this.rects[this.selectedRectIndex],
+      polygon: this.poly,
+      bound_box_changes: this.rectChanges && this.rectChanges[this.selectedRectIndex]
+          ? this.rectChanges[this.selectedRectIndex] : 0,
+      polygon_changes: this.polyChanges
+    };
+  }
 };
+
+class AnnotationState {
+  static START = 'start';
+  static BOUNDING_BOX = 'bounding-box';
+  static POLYGON = 'polygon';
+  static DONE = 'done';
+}
 
 
 const getBoundingBoxes = async (filename) => {
