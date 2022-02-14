@@ -176,7 +176,7 @@ class AppController {
     const result = this.appState.getAnnotationResult();
     console.log(result);
 
-    this.appState.annotationState = AnnotationState.DONE;
+    this.submitAnnotationResult(this.appState.filename, result);
   }
 
   draw() {
@@ -277,6 +277,25 @@ class AppController {
 
     this.draw();
   }
+
+  submitAnnotationResult(filename, result) {
+    console.log(filename);
+
+    var that = this;
+    submitResult(filename, result).then(
+      function(resp) {
+        that.submitAnnotationResultCallback(resp);
+      },
+      function(error) {
+          console.log("Error: ", error);
+      });
+  }
+
+  submitAnnotationResultCallback(resp) {
+    console.log(resp);
+    this.appState.AnnotationState = AnnotationState.DONE;
+  }
+
 };
 
 class CanvasUtil {
@@ -574,15 +593,37 @@ class AppState {
   }
 
   getAnnotationResult() {
+    const objectClass = this.objectClasses[this.selectedRectIndex];
+
+    const rp = this.orgRects[this.selectedRectIndex];
+    const predictedBoundingBox = [rp.x1, rp.y1, rp.x2, rp.y2];
+
+    const predictedPolygon = [];
+    this.orgPoly.points.forEach((p) => {
+      predictedPolygon.push([p.x, p.y]);
+    });
+
+    const ra = this.rects[this.selectedRectIndex];
+    const annotatedBoundingBox = [ra.x1, ra.y1, ra.x2, ra.y2];
+
+    const annotatedPolygon = [];
+    this.poly.points.forEach((p) => {
+      annotatedPolygon.push([p.x, p.y]);
+    });
+
+    const boundingBoxChanges = this.rectChanges && this.rectChanges[this.selectedRectIndex]
+        ? this.rectChanges[this.selectedRectIndex] : 0;
+
+    const polyChanges = this.polyChanges.move + this.polyChanges.add + this.polyChanges.delete;
+
     return {
-      object_class: this.objectClasses[this.selectedRectIndex],
-      original_bounding_box: this.orgRects[this.selectedRectIndex],
-      original_polygon: this.orgPoly,
-      bounding_box: this.rects[this.selectedRectIndex],
-      polygon: this.poly,
-      bound_box_changes: this.rectChanges && this.rectChanges[this.selectedRectIndex]
-          ? this.rectChanges[this.selectedRectIndex] : 0,
-      polygon_changes: this.polyChanges
+      object_class: objectClass,
+      predicted_bounding_box: predictedBoundingBox,
+      predicted_polygon: predictedPolygon,
+      annotated_bounding_box: annotatedBoundingBox,
+      annotated_polygon: annotatedPolygon,
+      bounding_box_changes: boundingBoxChanges,
+      polygon_changes: polyChanges
     };
   }
 };
@@ -622,6 +663,25 @@ const getObjectBoundaries = async (filename, boundingBox, objectClass) => {
       "bounding_box": [${boundingBox.x1}, ${boundingBox.y1}, ${boundingBox.x2}, ${boundingBox.y2}],
       "class_of_interest": ${objectClass}
     }`,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // extract JSON from the http response
+  const resp = await response.json();
+  return resp;
+};
+
+const submitResult = async (filename, result) => {
+  const req = {
+    image_id: 'img1',
+    image_file_name: filename,
+    result: result
+  }
+  const response = await fetch('/submit_result', {
+    method: 'POST',
+    body: JSON.stringify(req),
     headers: {
       'Content-Type': 'application/json'
     }
