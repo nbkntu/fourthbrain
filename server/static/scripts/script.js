@@ -1,10 +1,13 @@
 class AppController {
-  constructor(canvasEl, imageEl) {
+  constructor(canvasEl, imageEl, submitButtonEl) {
     this.appState = new AppState();
     this.canvasUtil = new CanvasUtil();
 
     this.canvasEl = canvasEl;
     this.setupCanvasEvents();
+
+    this.submitButtonEl = submitButtonEl;
+    this.setupSubmitButtonEvents();
 
     this.offsetX = 0;
     this.offsetY = 0;
@@ -18,7 +21,7 @@ class AppController {
 
   // reset offset coordinates of canvas element
   resetOffset() {
-    var box = canvas.getBoundingClientRect();
+    var box = this.canvasEl.getBoundingClientRect();
     this.offsetX = box.left;
     this.offsetY = box.top;
   }
@@ -30,6 +33,11 @@ class AppController {
     this.canvasEl.onmouseup = function(e) { that.handleMouseUp(e) };
     this.canvasEl.onmouseout = function(e) { that.handleMouseOut(e) };
     this.canvasEl.ondblclick = function(e) { that.handleDoubleClick(e) };
+  }
+
+  setupSubmitButtonEvents() {
+    const that = this;
+    this.submitButtonEl.onclick = function(e) { that.handleSubmitButtonClick(e) };
   }
 
   handleMouseDown(e) {
@@ -152,6 +160,8 @@ class AppController {
       const rid = rectIds[0];
       const rect = this.appState.rects[rid];
       const objectClass = this.appState.objectClasses[rid];
+      // save selected bounding box
+      this.appState.selectedRectIndex = rid;
       // switch to polygon mode
       this.appState.annotationState = AnnotationState.POLYGON;
       // get object boundary
@@ -160,6 +170,13 @@ class AppController {
 
     // Put your mouseup stuff here
     this.appState.isDown = false;
+  }
+
+  handleSubmitButtonClick(e) {
+    const result = this.appState.getAnnotationResult();
+    console.log(result);
+
+    this.appState.annotationState = AnnotationState.DONE;
   }
 
   draw() {
@@ -217,7 +234,7 @@ class AppController {
       this.appState.rects = rects;
       this.appState.objectClasses = resp.classes;
       // deep copy
-      this.appState.orgRects= JSON.parse(JSON.stringify(rects));
+      this.appState.orgRects= JSON.parse(JSON.stringify(this.appState.rects));
     } else {
       console.log('no bounding boxes');
     }
@@ -256,7 +273,7 @@ class AppController {
     console.log(points);
     this.appState.poly.points = points;
     // deep copy
-    this.appState.orgPoly= JSON.parse(JSON.stringify(points));
+    this.appState.orgPoly= JSON.parse(JSON.stringify(this.appState.poly));
 
     this.draw();
   }
@@ -554,6 +571,19 @@ class AppState {
       }
     });
     return rectIds;
+  }
+
+  getAnnotationResult() {
+    return {
+      object_class: this.objectClasses[this.selectedRectIndex],
+      original_bounding_box: this.orgRects[this.selectedRectIndex],
+      original_polygon: this.orgPoly,
+      bounding_box: this.rects[this.selectedRectIndex],
+      polygon: this.poly,
+      bound_box_changes: this.rectChanges && this.rectChanges[this.selectedRectIndex]
+          ? this.rectChanges[this.selectedRectIndex] : 0,
+      polygon_changes: this.polyChanges
+    };
   }
 };
 

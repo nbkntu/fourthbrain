@@ -13,18 +13,23 @@
   <li>Adjust the bounding box</li>
   <li>Double-click inside the box</li>
   <li>Work on the polygon</li>
+  <li>Finally click "Submit" button to submit the annotations</li>
 </ol>
 
 <div>
-    <input type="file" id="input-file" />
+  <input type="file" id="input-file" />
+</div>
+
+<div class="control-panel">
+  <button id="submit-button">Submit</button>
 </div>
 
 <div style="display:none;">
-    <img id="image-source">
+  <img id="image-source">
 </div>
 
 <div class="annotation-canvas">
-    <canvas id="canvas" width=600 height=500></canvas>
+  <canvas id="canvas" width=600 height=500></canvas>
 </div>
 
 <script>
@@ -32,7 +37,8 @@
 
     var appController = new AppController(
       document.getElementById('canvas'),
-      document.getElementById('image-source')
+      document.getElementById('image-source'),
+      document.getElementById('submit-button')
     );
 
     window.onscroll = function(e) { appController.resetOffset(); }
@@ -84,7 +90,7 @@
   };
 
   document.getElementById('input-file')
-      .addEventListener('change', handleFileSelect, false);
+    .addEventListener('change', handleFileSelect, false);
 </script>
 </body>
 </html>

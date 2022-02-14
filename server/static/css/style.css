@@ -6,6 +6,10 @@ h1 {
     color: blue;
 }
 
+.control-panel {
+    margin: 10px 0;
+}
+
 .annotation-canvas {
     margin-top: 10px;
 }
