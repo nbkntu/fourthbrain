@@ -26,6 +26,20 @@ class GetObjectBoundaryRequest(BaseModel):
     bounding_box: list
     class_of_interest: int
 
+class AnnotationResult(BaseModel):
+    object_class: int
+    predicted_bounding_box: list
+    predicted_polygon: list
+    annotated_bounding_box: list
+    annotated_polygon: list
+    bounding_box_changes: int
+    polygon_changes: int
+
+class SubmitResultRequest(BaseModel):
+    image_id: str
+    image_file_name: str
+    result: AnnotationResult
+
 class GetPolygonMetricsRequest(BaseModel):
     image_id: str
     predicted_polygon: list
@@ -48,7 +62,7 @@ def get_bounding_boxes_helper(req: GetBoundingBoxesRequest):
         npboxes[i][1] = max(0, int(npboxes[i][1]*img_shape[0]))
         npboxes[i][2] = max(0, int(npboxes[i][2]*img_shape[1]))
         npboxes[i][3] = max(0, int(npboxes[i][3]*img_shape[0]))
-    
+
     npboxes, classes = yolo.non_maximum_suppression(npboxes, classes.numpy().flatten())
 
     return image_path, npboxes, classes
@@ -59,28 +73,31 @@ def get_object_boundary_helper(req: GetObjectBoundaryRequest):
 
     return image_path, full_mask, simple_mask_polygon
 
-def get_polygon_IOU_helper(req: GetPolygonMetricsRequest):
+def submit_result_helper(req: SubmitResultRequest):
+    print(req)
+
+def get_polygon_iou_helper(req: GetPolygonMetricsRequest):
     ground_truth_points = [tuple(x) for x in req.ground_truth_polygon]
     predicted_points = [tuple(x) for x in req.predicted_polygon]
     ground_truth_polygon = Polygon(ground_truth_points)
     predicted_polygon = Polygon(predicted_points)
-    IOU = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
+    iou = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
 
-    return IOU
+    return iou
 
-def get_bounding_box_IOU_helper(req: GetBoundingBoxMetricsRequest):
+def get_bounding_box_iou_helper(req: GetBoundingBoxMetricsRequest):
     gt_tl = [req.ground_truth_bounding_box[0], req.ground_truth_bounding_box[1]]
     gt_br = [req.ground_truth_bounding_box[2], req.ground_truth_bounding_box[3]]
     ground_truth_points = [(gt_tl[0], gt_tl[1]), (gt_br[0], gt_tl[1]), (gt_br[0], gt_br[1]), (gt_tl[0], gt_br[1])]
     p_tl = [req.predicted_bounding_box[0], req.predicted_bounding_box[1]]
     p_br = [req.predicted_bounding_box[2], req.predicted_bounding_box[3]]
     predicted_points = [(p_tl[0], p_tl[1]), (p_br[0], p_tl[1]), (p_br[0], p_br[1]), (p_tl[0], p_br[1])]
-    
+
     ground_truth_polygon = Polygon(ground_truth_points)
     predicted_polygon = Polygon(predicted_points)
-    IOU = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
+    iou = ground_truth_polygon.intersection(predicted_polygon).area / (ground_truth_polygon.union(predicted_polygon).area + 0.001)
 
-    return IOU
+    return iou
 
 def get_polygon_number_of_changes_helper(req: GetPolygonMetricsRequest):
     gtp = copy.deepcopy(req.ground_truth_polygon)
@@ -112,7 +129,7 @@ def get_bounding_box_percentage_area_change_helper(req: GetBoundingBoxMetricsReq
     p_tl = [req.predicted_bounding_box[0], req.predicted_bounding_box[1]]
     p_br = [req.predicted_bounding_box[2], req.predicted_bounding_box[3]]
     predicted_points = [(p_tl[0], p_tl[1]), (p_br[0], p_tl[1]), (p_br[0], p_br[1]), (p_tl[0], p_br[1])]
-    
+
     ground_truth_polygon = Polygon(ground_truth_points)
     predicted_polygon = Polygon(predicted_points)
     percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area) / ground_truth_polygon.area

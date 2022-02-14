@@ -1,10 +1,21 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from helper import GetBoundingBoxesRequest, GetObjectBoundaryRequest, GetPolygonMetricsRequest, \
-    GetBoundingBoxMetricsRequest, get_bounding_boxes_helper, get_object_boundary_helper, get_polygon_IOU_helper, \
-    get_bounding_box_IOU_helper, get_polygon_number_of_changes_helper, get_polygon_percentage_area_change_helper, \
-    get_bounding_box_percentage_area_change_helper
+from helper import (
+    GetBoundingBoxesRequest,
+    GetObjectBoundaryRequest,
+    GetPolygonMetricsRequest,
+    GetBoundingBoxMetricsRequest,
+    SubmitResultRequest,
+    get_bounding_boxes_helper,
+    get_bounding_box_iou_helper,
+    get_bounding_box_percentage_area_change_helper,
+    get_object_boundary_helper,
+    get_polygon_iou_helper,
+    get_polygon_number_of_changes_helper,
+    get_polygon_percentage_area_change_helper,
+    submit_result_helper
+)
 
 app = FastAPI()
 
@@ -36,22 +47,30 @@ def get_object_boundary(req: GetObjectBoundaryRequest):
         'simple_mask_polygon': simple_mask_polygon.tolist()
     }
 
-@app.post('/get_polygon_IOU')
-def get_polygon_IOU(req: GetPolygonMetricsRequest):
-    IOU = get_polygon_IOU_helper(req)
+@app.post('/submit_result')
+def submit_result(req: SubmitResultRequest):
+    submit_result_helper(req)
 
     return {
-        'message': f'image id: {req.image_id}',
-        'IOU': IOU
+        'status': 'Success',
     }
 
-@app.post('/get_bounding_box_IOU')
-def get_bounding_box_IOU(req: GetBoundingBoxMetricsRequest):
-    IOU = get_bounding_box_IOU_helper(req)
+@app.post('/get_polygon_iou')
+def get_polygon_IOU(req: GetPolygonMetricsRequest):
+    iou = get_polygon_iou_helper(req)
 
     return {
         'message': f'image id: {req.image_id}',
-        'IOU': IOU
+        'iou': iou
+    }
+
+@app.post('/get_bounding_box_iou')
+def get_bounding_box_IOU(req: GetBoundingBoxMetricsRequest):
+    iou = get_bounding_box_iou_helper(req)
+
+    return {
+        'message': f'image id: {req.image_id}',
+        'iou': iou
     }
 
 @app.post('/get_polygon_number_of_changes')
