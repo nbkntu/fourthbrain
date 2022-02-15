@@ -165,5 +165,5 @@ def save_state_helper():
         json.dump(data, json_file)
 
 def update_state_helper(image_file_name, class_value, bounding_box, polygon, metrics):
-    
+    pass
     save_state_helper()
