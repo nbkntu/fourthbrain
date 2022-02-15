@@ -1,13 +1,16 @@
 import copy
+import json
 from shapely.geometry import Polygon
 from pydantic import BaseModel
 
 from yolov3_tf2 import yolov3_model
 from mask_rcnn import maskrcnn_model
 
+data = {}
+
 yolo = yolov3_model.YoloV3Model(
     i_classes='./config/coco.names',
-    i_yolo_max_boxes=10
+    i_yolo_max_boxes=100
 )
 
 mask_rcnn = maskrcnn_model.MaskRCNNModel(
@@ -103,13 +106,30 @@ def get_polygon_number_of_changes_helper(req: GetPolygonMetricsRequest):
     gtp = copy.deepcopy(req.ground_truth_polygon)
     pp = copy.deepcopy(req.predicted_polygon)
     count = 0
-    for p in pp:
-        if p not in gtp:
-            count += 1
-        else:
+    for p in req.predicted_polygon:
+        if p in req.ground_truth_polygon:
             gtp.remove(p)
+            pp.remove(p)
 
-    count += len(gtp)
+    count = max(len(gtp), len(pp))
+
+    return count
+
+def get_bounding_box_number_of_changes_helper(req: GetPolygonMetricsRequest):
+    gt_tl = [req.ground_truth_bounding_box[0], req.ground_truth_bounding_box[1]]
+    gt_br = [req.ground_truth_bounding_box[2], req.ground_truth_bounding_box[3]]
+    gtp = [[gt_tl[0], gt_tl[1]], [gt_br[0], gt_tl[1]], [gt_br[0], gt_br[1]], [gt_tl[0], gt_br[1]]]
+    p_tl = [req.predicted_bounding_box[0], req.predicted_bounding_box[1]]
+    p_br = [req.predicted_bounding_box[2], req.predicted_bounding_box[3]]
+    pp = [[p_tl[0], p_tl[1]], [p_br[0], p_tl[1]], [p_br[0], p_br[1]], [p_tl[0], p_br[1]]]
+    
+    count = 0
+    for p in copy.deepcopy(pp):
+        if p in copy.deepcopy(gtp):
+            gtp.remove(p)
+            pp.remove(p)
+
+    count = max(len(gtp), len(pp))
 
     return count
 
@@ -135,3 +155,15 @@ def get_bounding_box_percentage_area_change_helper(req: GetBoundingBoxMetricsReq
     percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area) / ground_truth_polygon.area
 
     return percentage_area_change
+
+def load_state_helper():
+    with open("./data.json") as json_file:
+        data = json.load(json_file)
+
+def save_state_helper():
+    with open("./data.json", "w") as json_file:
+        json.dump(data, json_file)
+
+def update_state_helper(image_file_name, class_value, bounding_box, polygon, metrics):
+    pass
+    save_state_helper()

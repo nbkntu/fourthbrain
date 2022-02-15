@@ -82,6 +82,15 @@ def get_polygon_number_of_changes(req: GetPolygonMetricsRequest):
         'changes': count
     }
 
+@app.post('/get_bounding_box_number_of_changes')
+def get_bounding_box_number_of_changes(req: GetBoundingBoxMetricsRequest):
+    count = get_bounding_box_number_of_changes_helper(req)
+
+    return {
+        'message': f'image id: {req.image_id}',
+        'changes': count
+    }
+
 @app.post('/get_polygon_percentage_area_change')
 def get_polygon_percentage_area_change(req: GetPolygonMetricsRequest):
     percentage_area_change = get_polygon_percentage_area_change_helper(req)
