@@ -200,19 +200,43 @@ class AppController {
     return canvas.getContext('2d');
   }
 
-  startGetBoundingBox(filename) {
-    console.log(filename);
+  handleImageLoaded(fileObj, toUploadImage) {
 
-    this.appState.filename = filename;
+    if (toUploadImage) {
+      // first upload image
+      uploadImage(fileObj).then(
+          function(resp) {
+            console.log(resp);
+            const filename = resp.filename;
+            console.log('uploaded:', filename);
 
-    var that = this;
-    getBoundingBoxes(filename).then(
-      function(resp) {
-          that.getBoundingBoxesCallback(resp);
-      },
-      function(error) {
-          console.log("Error: ", error);
-      });
+            // then get bounding box
+            // var that = this;
+            // getBoundingBoxes(filename).then(
+            //     function(resp) {
+            //       that.getBoundingBoxesCallback(resp);
+            //     },
+            //     function(error) {
+            //         console.log("Error: ", error);
+            //     });
+          },
+          function(error) {
+              console.log("Error: ", error);
+          });
+    } else {
+      filename = fileObj.name;
+      console.log(filename);
+      this.appState.filename = filename;
+
+      var that = this;
+      getBoundingBoxes(filename).then(
+          function(resp) {
+              that.getBoundingBoxesCallback(resp);
+          },
+          function(error) {
+              console.log("Error: ", error);
+          });
+    }
   }
 
   getBoundingBoxesCallback(resp) {
@@ -635,6 +659,24 @@ class AnnotationState {
   static DONE = 'done';
 }
 
+const uploadImage = async (fileObj) => {
+  console.log(fileObj);
+
+  let data = new FormData();
+  data.append('file', fileObj);
+
+  const response = await fetch('/upload_image', {
+    method: 'POST',
+    body: data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+  });
+
+  // extract JSON from the http response
+  const resp = await response.json();
+  return resp;
+};
 
 const getBoundingBoxes = async (filename) => {
     const response = await fetch('/get_bounding_boxes', {
@@ -652,7 +694,6 @@ const getBoundingBoxes = async (filename) => {
     const resp = await response.json();
     return resp;
 };
-
 
 const getObjectBoundaries = async (filename, boundingBox, objectClass) => {
   const response = await fetch('/get_object_boundary', {
