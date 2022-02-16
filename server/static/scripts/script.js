@@ -670,24 +670,28 @@ const uploadImage = async (fileObj) => {
   // Because FileReader is asynchronous, store its
   // result when it finishes to read the file
   reader.addEventListener('load', function () {
-    console.log('file read');
     fileBinary = reader.result;
+
+    console.log('file read');
+    console.log(fileBinary);
   });
 
-  reader.readAsBinaryString(fileObj);
+  reader.readAsDataURL(fileObj);
 
   // sendData is our main function
   async function sendData() {
     // If there is a selected file, wait it is read
     // If there is not, delay the execution of the function
     if(!fileBinary) {
-      setTimeout(sendData, 10);
+      setTimeout(sendData, 5);
       return;
     }
 
+    console.log('start upload')
+
     // prepare data
     // We need a separator to define each part of the request
-    const boundary = 'blob';
+    const boundary = '--blob123';
 
     // Store our body request in a string.
     let data = '';
