@@ -120,7 +120,7 @@ async def upload_image(file: UploadFile = File(...)):
     # save file
     fn = 'sheep.jpg'
     with open(f'./data/{fn}', 'wb') as f:
-        f.write(base64.decodebytes(content))
+        f.write(content)
 
     return {
         'filename': fn
