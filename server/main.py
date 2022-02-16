@@ -1,4 +1,4 @@
-import base64
+import time
 
 from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.staticfiles import StaticFiles
@@ -117,8 +117,9 @@ async def upload_image(file: UploadFile = File(...)):
     print(file)
 
     content = file.file.read()
+
     # save file
-    fn = 'sheep.jpg'
+    fn = 'upload_{}_{}'.format(int(time.time()), file.filename)
     with open(f'./data/{fn}', 'wb') as f:
         f.write(content)
 
