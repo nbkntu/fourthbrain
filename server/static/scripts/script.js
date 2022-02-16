@@ -200,7 +200,7 @@ class AppController {
     console.log(result);
 
     const filename = 'annotation.json';
-    const blob = new Blob([JSON.stringify(result)], {type: 'text/json'});
+    const blob = new Blob([JSON.stringify(result)], {type: 'application/json'});
 
     if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveBlob(blob, filename);
