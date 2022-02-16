@@ -201,6 +201,8 @@ class AppController {
   }
 
   handleImageLoaded(fileObj, toUploadImage) {
+    this.appState.annotationState = AnnotationState.START;
+
     // then get bounding box
     const that = this;
     if (toUploadImage) {
@@ -226,7 +228,7 @@ class AppController {
               console.log("Error: ", error);
           });
     } else {
-      filename = fileObj.name;
+      const filename = fileObj.name;
       console.log(filename);
       this.appState.filename = filename;
 

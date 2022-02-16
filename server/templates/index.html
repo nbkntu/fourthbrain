@@ -17,6 +17,10 @@
 </ol>
 
 <div>
+  <input type="checkbox" id="upload-image">
+  <label for="upload-image">Upload image to server</label>
+  <br>
+
   <input type="file" id="input-file" />
 </div>
 
@@ -81,7 +85,9 @@
             // draw image html element onto canvas, keep image original size
             ctx.drawImage(img, 0, 0);
 
-            appController.handleImageLoaded(theFile, true /* toUploadImage */);
+            const toUploadImage = document.getElementById('upload-image');
+
+            appController.handleImageLoaded(theFile, toUploadImage.checked);
           };
         };
       })(f);
