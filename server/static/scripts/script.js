@@ -1,5 +1,5 @@
 class AppController {
-  constructor(canvasEl, imageEl, submitButtonEl) {
+  constructor(canvasEl, imageEl, submitButtonEl, downloadButtonEl) {
     this.appState = new AppState();
     this.canvasUtil = new CanvasUtil();
 
@@ -8,6 +8,9 @@ class AppController {
 
     this.submitButtonEl = submitButtonEl;
     this.setupSubmitButtonEvents();
+
+    this.downloadButtonEl = downloadButtonEl;
+    this.setupDownloadButtonEvents();
 
     this.offsetX = 0;
     this.offsetY = 0;
@@ -38,6 +41,11 @@ class AppController {
   setupSubmitButtonEvents() {
     const that = this;
     this.submitButtonEl.onclick = function(e) { that.handleSubmitButtonClick(e) };
+  }
+
+  setupDownloadButtonEvents() {
+    const that = this;
+    this.downloadButtonEl.onclick = function(e) { that.handleDownloadButtonClick(e) };
   }
 
   handleMouseDown(e) {
@@ -173,10 +181,37 @@ class AppController {
   }
 
   handleSubmitButtonClick(e) {
+    // tell the browser we're handling this event
+    e.preventDefault();
+    e.stopPropagation();
+
     const result = this.appState.getAnnotationResult();
     console.log(result);
 
     this.submitAnnotationResult(this.appState.filename, result);
+  }
+
+  handleDownloadButtonClick(e) {
+    // tell the browser we're handling this event
+    e.preventDefault();
+    e.stopPropagation();
+
+    const result = this.appState.getAnnotationResult();
+    console.log(result);
+
+    const filename = 'annotation.json';
+    const blob = new Blob([JSON.stringify(result)], {type: 'text/json'});
+
+    if (window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveBlob(blob, filename);
+    } else {
+        const elem = window.document.createElement('a');
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        document.body.removeChild(elem);
+    }
   }
 
   draw() {

@@ -13,7 +13,8 @@
   <li>Adjust the bounding box</li>
   <li>Double-click inside the box</li>
   <li>Work on the polygon</li>
-  <li>Finally click "Submit"</li>
+  <li>Finally, click "Submit"</li>
+  <li>Optionally, click "Download" to download annotation JSON</li>
 </ol>
 
 <div>
@@ -26,6 +27,7 @@
 
 <div class="control-panel">
   <button id="submit-button">Submit</button>
+  <button id="download-button">Download</button>
 </div>
 
 <div style="display:none;">
@@ -42,7 +44,8 @@
     var appController = new AppController(
       document.getElementById('canvas'),
       document.getElementById('image-source'),
-      document.getElementById('submit-button')
+      document.getElementById('submit-button'),
+      document.getElementById('download-button'),
     );
 
     window.onscroll = function(e) { appController.resetOffset(); }
