@@ -662,19 +662,72 @@ class AnnotationState {
 const uploadImage = async (fileObj) => {
   console.log(fileObj);
 
-  let data = new FormData();
-  data.append('file', fileObj);
+  let fileBinary = null;
 
-  const response = await fetch('/upload_image', {
-    method: 'POST',
-    body: data,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
+  // Use the FileReader API to access file content
+  const reader = new FileReader();
+
+  // Because FileReader is asynchronous, store its
+  // result when it finishes to read the file
+  reader.addEventListener('load', function () {
+    console.log('file read');
+    fileBinary = reader.result;
   });
 
+  reader.readAsBinaryString(fileObj);
+
+  // sendData is our main function
+  async function sendData() {
+    // If there is a selected file, wait it is read
+    // If there is not, delay the execution of the function
+    if(!fileBinary) {
+      setTimeout(sendData, 10);
+      return;
+    }
+
+    // prepare data
+    // We need a separator to define each part of the request
+    const boundary = 'blob';
+
+    // Store our body request in a string.
+    let data = '';
+
+    // Start a new part in our body's request
+    data += '--' + boundary + '\r\n';
+
+    // Describe it as form data
+    data += 'Content-Disposition: form-data; '
+        //  Define the name of the form data
+        + 'name="file"; '
+        // Provide the real name of the file
+        + 'filename="' + fileObj.name + '"\r\n';
+
+    // And the MIME type of the file
+    data += 'Content-Type: ' + fileObj.type + '\r\n';
+
+    // There's a blank line between the metadata and the data
+    data += '\r\n';
+
+    // Append the binary data to our body's request
+    data += fileBinary + '\r\n';
+
+    // Once we are done, "close" the body's request
+    data += '--' + boundary + '--';
+
+    let response = fetch('/upload_image', {
+      method: 'POST',
+      body: data,
+      headers: {
+        'Content-Type': 'multipart/form-data; boundary=' + boundary
+      },
+    });
+
+    return response;
+  };
+
   // extract JSON from the http response
-  const resp = await response.json();
+  let response = await sendData();
+  let resp = await response.json();
   return resp;
 };
 
