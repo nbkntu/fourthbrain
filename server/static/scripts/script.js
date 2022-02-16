@@ -201,7 +201,8 @@ class AppController {
   }
 
   handleImageLoaded(fileObj, toUploadImage) {
-
+    // then get bounding box
+    const that = this;
     if (toUploadImage) {
       // first upload image
       uploadImage(fileObj).then(
@@ -210,15 +211,16 @@ class AppController {
             const filename = resp.filename;
             console.log('uploaded:', filename);
 
-            // then get bounding box
-            // var that = this;
-            // getBoundingBoxes(filename).then(
-            //     function(resp) {
-            //       that.getBoundingBoxesCallback(resp);
-            //     },
-            //     function(error) {
-            //         console.log("Error: ", error);
-            //     });
+            // set the new filename
+            that.appState.filename = filename;
+
+            getBoundingBoxes(filename).then(
+                function(resp) {
+                  that.getBoundingBoxesCallback(resp);
+                },
+                function(error) {
+                    console.log("Error: ", error);
+                });
           },
           function(error) {
               console.log("Error: ", error);
@@ -228,7 +230,6 @@ class AppController {
       console.log(filename);
       this.appState.filename = filename;
 
-      var that = this;
       getBoundingBoxes(filename).then(
           function(resp) {
               that.getBoundingBoxesCallback(resp);
@@ -666,7 +667,7 @@ const uploadImage = async (fileObj) => {
   var formData = new FormData();
   formData.append("file", fileObj);
 
-  let response = fetch('/upload_image', {
+  const response = await fetch('/upload_image', {
     method: 'POST',
     body: formData,
   });
