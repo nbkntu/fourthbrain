@@ -45,6 +45,7 @@ pycocotools==2.0.3
 pydantic==1.9.0
 pyparsing==3.0.7
 python-dateutil==2.8.2
+python-multipart
 PyYAML==5.4.1
 requests==2.26.0
 rsa==4.8

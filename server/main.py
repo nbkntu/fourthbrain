@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Request
+import time
+
+from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from helper import (
     GetBoundingBoxesRequest,
     GetObjectBoundaryRequest,
@@ -107,4 +110,19 @@ def get_bounding_box_percentage_area_change(req: GetBoundingBoxMetricsRequest):
     return {
         'message': f'image id: {req.image_id}',
         'percentage_area_change': percentage_area_change
+    }
+
+@app.post('/upload_image')
+async def upload_image(file: UploadFile = File(...)):
+    print(file)
+
+    content = file.file.read()
+
+    # save file
+    fn = 'upload_{}_{}'.format(int(time.time()), file.filename)
+    with open(f'./data/{fn}', 'wb') as f:
+        f.write(content)
+
+    return {
+        'filename': fn
     }

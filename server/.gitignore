@@ -4,3 +4,5 @@ smart_annotation.egg-info/
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+# Uploaded images
+upload_*

@@ -17,6 +17,10 @@
 </ol>
 
 <div>
+  <input type="checkbox" id="upload-image">
+  <label for="upload-image">Upload image to server</label>
+  <br>
+
   <input type="file" id="input-file" />
 </div>
 
@@ -48,7 +52,7 @@
       var files = evt.target.files; // FileList object
 
       // Loop through the FileList and render image files as thumbnails.
-      f = files[0];
+      let f = files[0];
 
       // Only process image files.
       if (!f.type.match('image.*')) {
@@ -60,6 +64,7 @@
       // Closure to capture the file information.
       reader.onload = (function(theFile) {
         return function(e) {
+
           // render local image into html element
           var img = document.getElementById('image-source');
           img.src = e.target.result;
@@ -80,7 +85,9 @@
             // draw image html element onto canvas, keep image original size
             ctx.drawImage(img, 0, 0);
 
-            appController.startGetBoundingBox(theFile.name);
+            const toUploadImage = document.getElementById('upload-image');
+
+            appController.handleImageLoaded(theFile, toUploadImage.checked);
           };
         };
       })(f);
