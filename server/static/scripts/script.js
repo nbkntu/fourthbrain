@@ -199,19 +199,8 @@ class AppController {
     const result = this.appState.getAnnotationResult();
     console.log(result);
 
-    const filename = 'annotation.json';
-    const blob = new Blob([JSON.stringify(result)], {type: 'application/json'});
-
-    if (window.navigator.msSaveOrOpenBlob) {
-        window.navigator.msSaveBlob(blob, filename);
-    } else {
-        const elem = window.document.createElement('a');
-        elem.href = window.URL.createObjectURL(blob);
-        elem.download = filename;
-        document.body.appendChild(elem);
-        elem.click();
-        document.body.removeChild(elem);
-    }
+    const win = window.open('', '_blank');
+    win.document.write('<pre>' + JSON.stringify(result, null, 2) + '</pre>');
   }
 
   draw() {
