@@ -1,3 +1,4 @@
+import os
 import copy
 import json
 from shapely.geometry import Polygon
@@ -77,7 +78,96 @@ def get_object_boundary_helper(req: GetObjectBoundaryRequest):
     return image_path, full_mask, simple_mask_polygon
 
 def submit_result_helper(req: SubmitResultRequest):
-    print(req)
+    global data
+    load_state_helper()
+    if req.result is not None:
+        if req.result.object_class in data:
+            class_data = data.get(req.result.object_class)
+        else:
+            class_data = {}
+            data[req.result.object_class] = class_data
+
+        if req.image_file_name in class_data:
+            image_data = data.get(req.image_file_name)
+        else:
+            image_data = {}
+            data[req.image_file_name] = image_data
+
+        image_data["image_id"] = req.image_id
+        image_data["predicted_bounding_box"] = req.result.predicted_bounding_box
+        image_data["predicted_polygon"] = req.result.predicted_polygon
+        image_data["annotated_bounding_box"] = req.result.annotated_bounding_box
+        image_data["annotated_polygon"] = req.result.annotated_polygon
+
+        # TODO: read ground truth when available
+        if True:
+            image_data["ground_truth_bounding_box"] = [10, 10, 30, 30]
+            image_data["ground_truth_polygon"] = [[10, 10], [10, 20], [10, 30], [20, 30], [30, 30], [30, 20], [30, 10], [20, 10]]
+        else:
+            image_data["ground_truth_bounding_box"] = None
+            image_data["ground_truth_polygon"] = None
+
+        image_data["metrics"] = {"an_vs_gt": {}, "pd_vs_gt": {}, "an_vs_pd": {}}
+        image_metrics = image_data.get("metrics")
+
+        # pd_vs_gt
+        if image_data.get("predicted_bounding_box") is not None and image_data.get("ground_truth_bounding_box") is not None:
+            pd_vs_gt = image_metrics.get("pd_vs_gt")
+            r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_bounding_box=image_data.get("predicted_bounding_box"), \
+                ground_truth_bounding_box=image_data.get("ground_truth_bounding_box"))
+            pd_vs_gt["bb_iou"] = get_bounding_box_iou_helper(r)
+            pd_vs_gt["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+            pd_vs_gt["bb_number_of_changes"] = get_bounding_box_number_of_changes_helper(r)
+
+        if image_data.get("predicted_polygon") is not None and image_data.get("ground_truth_polygon") is not None:
+            pd_vs_gt = image_metrics.get("pd_vs_gt")
+            r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_polygon=image_data.get("predicted_polygon"), \
+                ground_truth_polygon=image_data.get("ground_truth_polygon"))
+            pd_vs_gt["p_iou"] = get_polygon_iou_helper(r)
+            pd_vs_gt["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+            pd_vs_gt["p_number_of_changes"] = get_polygon_number_of_changes_helper(r)
+
+        # an_vs_gt
+        if image_data.get("annotated_bounding_box") is not None and image_data.get("ground_truth_bounding_box") is not None:
+            an_vs_gt = image_metrics.get("an_vs_gt")
+            r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_bounding_box=image_data.get("annotated_bounding_box"), \
+                ground_truth_bounding_box=image_data.get("ground_truth_bounding_box"))
+            an_vs_gt["bb_iou"] = get_bounding_box_iou_helper(r)
+            an_vs_gt["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+            an_vs_gt["bb_number_of_changes"] = get_bounding_box_number_of_changes_helper(r)
+
+        if image_data.get("annotated_polygon") is not None and image_data.get("ground_truth_polygon") is not None:
+            an_vs_gt = image_metrics.get("an_vs_gt")
+            r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_polygon=image_data.get("annotated_polygon"), \
+                ground_truth_polygon=image_data.get("ground_truth_polygon"))
+            an_vs_gt["p_iou"] = get_polygon_iou_helper(r)
+            an_vs_gt["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+            an_vs_gt["p_number_of_changes"] = get_polygon_number_of_changes_helper(r)
+
+        # an_vs_pd
+        if image_data.get("annotated_bounding_box") is not None and image_data.get("predicted_bounding_box") is not None:
+            an_vs_pd = image_metrics.get("an_vs_pd")
+            r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_bounding_box=image_data.get("predicted_bounding_box"), \
+                ground_truth_bounding_box=image_data.get("annotated_bounding_box"))
+            an_vs_pd["bb_iou"] = get_bounding_box_iou_helper(r)
+            an_vs_pd["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+            an_vs_pd["bb_number_of_changes"] = req.result.bounding_box_changes
+
+        if image_data.get("annotated_polygon") is not None and image_data.get("predicted_polygon") is not None:
+            an_vs_pd = image_metrics.get("an_vs_pd")
+            r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                predicted_polygon=image_data.get("predicted_polygon"), \
+                ground_truth_polygon=image_data.get("annotated_polygon"))
+            an_vs_pd["p_iou"] = get_polygon_iou_helper(r)
+            an_vs_pd["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+            an_vs_pd["p_number_of_changes"] = req.result.polygon_changes
+
+    save_state_helper()
 
 def get_polygon_iou_helper(req: GetPolygonMetricsRequest):
     ground_truth_points = [tuple(x) for x in req.ground_truth_polygon]
@@ -157,13 +247,12 @@ def get_bounding_box_percentage_area_change_helper(req: GetBoundingBoxMetricsReq
     return percentage_area_change
 
 def load_state_helper():
-    with open("./data.json") as json_file:
-        data = json.load(json_file)
+    global data
+    if not data and os.path.exists("./data.json"):
+        with open("./data.json") as json_file:
+            data = json.load(json_file)
 
 def save_state_helper():
+    global data
     with open("./data.json", "w") as json_file:
         json.dump(data, json_file)
-
-def update_state_helper(image_file_name, class_value, bounding_box, polygon, metrics):
-    pass
-    save_state_helper()
