@@ -1,4 +1,3 @@
-from msilib.schema import InstallExecuteSequence
 import os
 import skimage.io
 import numpy as np

@@ -4,6 +4,10 @@ from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from os.path import isfile
+from fastapi import Response
+from mimetypes import guess_type
+
 from helper import (
     GetBoundingBoxesRequest,
     GetObjectBoundaryRequest,
@@ -24,6 +28,19 @@ app = FastAPI()
 
 app.mount("/css", StaticFiles(directory="static/css"), name="static-css")
 app.mount("/scripts", StaticFiles(directory="static/scripts"), name="static-scripts")
+
+@app.get("/favicon.ico")
+async def favicon():
+    filename = './static/favicon.ico'
+
+    if not isfile(filename):
+        return Response(status_code=404)
+
+    with open(filename, 'rb') as f:
+        content = f.read()
+
+    content_type, _ = guess_type(filename)
+    return Response(content, media_type=content_type)
 
 templates = Jinja2Templates(directory="templates")
 
