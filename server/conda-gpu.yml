@@ -10,6 +10,7 @@ dependencies:
     - tensorflow-gpu>=2.5.1
     - opencv-python
     - opencv-contrib-python
+    - pycocotools
     - python-multipart
     - lxml
     - tqdm
