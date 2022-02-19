@@ -20,6 +20,7 @@ dependencies:
     - keras
     - matplotlib
     - numpy
+    - pycocotools
     - python-multipart
     - scikit_image
     - scipy
