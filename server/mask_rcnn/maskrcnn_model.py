@@ -1,3 +1,4 @@
+from msilib.schema import InstallExecuteSequence
 import os
 import skimage.io
 import numpy as np
@@ -49,9 +50,13 @@ class MaskRCNNModel:
         # run detection
         results = self.model.detect([bounding_box_image], verbose=1)
         indexes = np.where(results[0]['class_ids'] == i_class_of_interest)
+        # take the first element
+        # somehow indexes[0] returns ndarray if there are multiple instances
+        mask_id = indexes[0][0]
+        print(mask_id)
         if len(indexes) > 0:
             s = results[0]['masks'].shape
-            bb_mask = results[0]['masks'][:, :, indexes[0]].reshape((s[0], s[1]))
+            bb_mask = results[0]['masks'][:, :, mask_id].reshape((s[0], s[1]))
             full_mask = np.zeros((image.shape[0], image.shape[1]), dtype=bool)
             full_mask[i_bounding_box[1]:i_bounding_box[3] + 1, i_bounding_box[0]:i_bounding_box[2] + 1] = bb_mask
             plt.imsave("./data/mask.jpg", full_mask)
@@ -74,8 +79,6 @@ class MaskRCNNModel:
         contours = find_contours(m2, level=0.5, fully_connected='low')
         # take the first one, ignore the rest
         contour = contours[0]
-        # convert back to row,col coordinates, also shift back 1 pixel
-        mask_polygon = np.fliplr(contour) - 1
 
         simple_contour = approximate_polygon(np.array(contour), tolerance=1)
         print(len(contour), len(simple_contour))
