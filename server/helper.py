@@ -206,6 +206,71 @@ def submit_result_helper(req: SubmitResultRequest):
 
     save_state_helper()
 
+def recalculate_metrics_helper():
+    global data
+    load_state_helper()
+
+    for _, class_data in data.items():
+        for _, image_data in class_data.items():
+            image_metrics = image_data.get("metrics")
+
+            # pd_vs_gt
+            if image_data.get("predicted_bounding_box") is not None and image_data.get("ground_truth_bounding_box") is not None:
+                pd_vs_gt = image_metrics.get("pd_vs_gt")
+                r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_bounding_box=image_data.get("predicted_bounding_box"), \
+                    ground_truth_bounding_box=image_data.get("ground_truth_bounding_box"))
+                pd_vs_gt["bb_iou"] = get_bounding_box_iou_helper(r)
+                pd_vs_gt["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+                pd_vs_gt["bb_number_of_changes"] = get_bounding_box_number_of_changes_helper(r)
+
+            if image_data.get("predicted_polygon") is not None and image_data.get("ground_truth_polygon") is not None:
+                pd_vs_gt = image_metrics.get("pd_vs_gt")
+                r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_polygon=image_data.get("predicted_polygon"), \
+                    ground_truth_polygon=image_data.get("ground_truth_polygon"))
+                pd_vs_gt["p_iou"] = get_polygon_iou_helper(r)
+                pd_vs_gt["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+                pd_vs_gt["p_number_of_changes"] = get_polygon_number_of_changes_helper(r)
+
+            # an_vs_gt
+            if image_data.get("annotated_bounding_box") is not None and image_data.get("ground_truth_bounding_box") is not None:
+                an_vs_gt = image_metrics.get("an_vs_gt")
+                r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_bounding_box=image_data.get("annotated_bounding_box"), \
+                    ground_truth_bounding_box=image_data.get("ground_truth_bounding_box"))
+                an_vs_gt["bb_iou"] = get_bounding_box_iou_helper(r)
+                an_vs_gt["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+                an_vs_gt["bb_number_of_changes"] = get_bounding_box_number_of_changes_helper(r)
+
+            if image_data.get("annotated_polygon") is not None and image_data.get("ground_truth_polygon") is not None:
+                an_vs_gt = image_metrics.get("an_vs_gt")
+                r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_polygon=image_data.get("annotated_polygon"), \
+                    ground_truth_polygon=image_data.get("ground_truth_polygon"))
+                an_vs_gt["p_iou"] = get_polygon_iou_helper(r)
+                an_vs_gt["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+                an_vs_gt["p_number_of_changes"] = get_polygon_number_of_changes_helper(r)
+
+            # an_vs_pd
+            if image_data.get("annotated_bounding_box") is not None and image_data.get("predicted_bounding_box") is not None:
+                an_vs_pd = image_metrics.get("an_vs_pd")
+                r = GetBoundingBoxMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_bounding_box=image_data.get("predicted_bounding_box"), \
+                    ground_truth_bounding_box=image_data.get("annotated_bounding_box"))
+                an_vs_pd["bb_iou"] = get_bounding_box_iou_helper(r)
+                an_vs_pd["bb_percentage_area_change"] = get_bounding_box_percentage_area_change_helper(r)
+
+            if image_data.get("annotated_polygon") is not None and image_data.get("predicted_polygon") is not None:
+                an_vs_pd = image_metrics.get("an_vs_pd")
+                r = GetPolygonMetricsRequest(image_id=image_data.get("image_id"), \
+                    predicted_polygon=image_data.get("predicted_polygon"), \
+                    ground_truth_polygon=image_data.get("annotated_polygon"))
+                an_vs_pd["p_iou"] = get_polygon_iou_helper(r)
+                an_vs_pd["p_percentage_area_change"] = get_polygon_percentage_area_change_helper(r)
+
+    save_state_helper()
+
 def compute_statistics_helper():
     global data
     load_state_helper()

@@ -22,7 +22,8 @@ from helper import (
     get_polygon_number_of_changes_helper,
     get_polygon_percentage_area_change_helper,
     submit_result_helper,
-    compute_statistics_helper
+    compute_statistics_helper,
+    recalculate_metrics_helper
 )
 
 app = FastAPI()
@@ -71,6 +72,14 @@ def get_object_boundary(req: GetObjectBoundaryRequest):
 @app.post('/submit_result')
 def submit_result(req: SubmitResultRequest):
     submit_result_helper(req)
+
+    return {
+        'status': 'Success',
+    }
+
+@app.post('/recalculate_metrics')
+def recalculate_metrics():
+    recalculate_metrics_helper()
 
     return {
         'status': 'Success',
