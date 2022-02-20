@@ -4,6 +4,7 @@ import json
 from shapely.geometry import Polygon
 from pydantic import BaseModel
 
+from coco.cocotools import CocoUtils
 from yolov3_tf2 import yolov3_model
 from mask_rcnn import maskrcnn_model
 
@@ -77,6 +78,40 @@ def get_object_boundary_helper(req: GetObjectBoundaryRequest):
 
     return image_path, full_mask, simple_mask_polygon
 
+def get_points(segmentation):
+    s = segmentation[0]
+    points = []
+    for i in range(0, len(s), 2):
+        points.append([int(s[i]), int(s[i+1])])
+
+    return points
+
+def find_best_ground_truth(gts, ann_bbox):
+    first = True
+    ground_truth_bounding_box = None
+    ground_truth_polygon = None
+    mx = 0
+    for g in gts:
+        if first:
+            first = False
+            ground_truth_bounding_box = [int(x) for x in g.get("bbox")]
+            ground_truth_polygon = get_points(g.get("segmentation"))
+            mx = get_bounding_box_iou_helper(GetBoundingBoxMetricsRequest(image_id="", \
+                                                                            predicted_bounding_box=ann_bbox, \
+                                                                            ground_truth_bounding_box=ground_truth_bounding_box))
+        else:
+            bbox = [int(x) for x in g.get("bbox")]
+            m = get_bounding_box_iou_helper(GetBoundingBoxMetricsRequest(image_id="", \
+                                                                            predicted_bounding_box=ann_bbox, \
+                                                                            ground_truth_bounding_box=bbox))
+            if (m > mx):
+                mx = m
+                ground_truth_bounding_box = bbox
+                ground_truth_polygon = get_points(g.get("segmentation"))
+        
+
+    return ground_truth_bounding_box, ground_truth_polygon
+
 def submit_result_helper(req: SubmitResultRequest):
     global data
     load_state_helper()
@@ -88,10 +123,10 @@ def submit_result_helper(req: SubmitResultRequest):
             data[req.result.object_class] = class_data
 
         if req.image_file_name in class_data:
-            image_data = data.get(req.image_file_name)
+            image_data = class_data.get(req.image_file_name)
         else:
             image_data = {}
-            data[req.image_file_name] = image_data
+            class_data[req.image_file_name] = image_data
 
         image_data["image_id"] = req.image_id
         image_data["predicted_bounding_box"] = req.result.predicted_bounding_box
@@ -100,9 +135,12 @@ def submit_result_helper(req: SubmitResultRequest):
         image_data["annotated_polygon"] = req.result.annotated_polygon
 
         # TODO: read ground truth when available
-        if True:
-            image_data["ground_truth_bounding_box"] = [10, 10, 30, 30]
-            image_data["ground_truth_polygon"] = [[10, 10], [10, 20], [10, 30], [20, 30], [30, 30], [30, 20], [30, 10], [20, 10]]
+        utils = CocoUtils()
+        gts = utils.load_annotations(int(os.path.splitext(req.image_file_name)[0]), req.result.object_class)
+        ground_truth_bounding_box, ground_truth_polygon = find_best_ground_truth(gts, req.result.annotated_bounding_box)
+        if ground_truth_bounding_box is not None:
+            image_data["ground_truth_bounding_box"] = ground_truth_bounding_box
+            image_data["ground_truth_polygon"] = ground_truth_polygon
         else:
             image_data["ground_truth_bounding_box"] = None
             image_data["ground_truth_polygon"] = None
