@@ -1,3 +1,4 @@
+.DS_Store
 __pycache__/
 smart_annotation.egg-info/
 # Elastic Beanstalk Files
