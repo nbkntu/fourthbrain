@@ -134,7 +134,6 @@ def submit_result_helper(req: SubmitResultRequest):
         image_data["annotated_bounding_box"] = req.result.annotated_bounding_box
         image_data["annotated_polygon"] = req.result.annotated_polygon
 
-        # TODO: read ground truth when available
         utils = CocoUtils()
         gts = utils.load_annotations(int(os.path.splitext(req.image_file_name)[0]), req.result.object_class)
         ground_truth_bounding_box, ground_truth_polygon = find_best_ground_truth(gts, req.result.annotated_bounding_box)
@@ -207,6 +206,294 @@ def submit_result_helper(req: SubmitResultRequest):
 
     save_state_helper()
 
+def compute_statistics_helper():
+    global data
+    load_state_helper()
+
+    overall_pd_vs_gt_bb_min_iou = 2
+    overall_pd_vs_gt_bb_max_iou = -1
+    overall_pd_vs_gt_bb_sum_iou = 0
+    overall_pd_vs_gt_bb_min_percentage_area_change = 200
+    overall_pd_vs_gt_bb_max_percentage_area_change = -1
+    overall_pd_vs_gt_bb_sum_percentage_area_change = 0
+    overall_pd_vs_gt_bb_min_number_of_changes = 10000
+    overall_pd_vs_gt_bb_max_number_of_changes = -1
+    overall_pd_vs_gt_bb_sum_number_of_changes = 0
+    overall_pd_vs_gt_p_min_iou = 2
+    overall_pd_vs_gt_p_max_iou = -1
+    overall_pd_vs_gt_p_sum_iou = 0
+    overall_pd_vs_gt_p_min_percentage_area_change = 200
+    overall_pd_vs_gt_p_max_percentage_area_change = -1
+    overall_pd_vs_gt_p_sum_percentage_area_change = 0
+    overall_pd_vs_gt_p_min_number_of_changes = 10000
+    overall_pd_vs_gt_p_max_number_of_changes = -1
+    overall_pd_vs_gt_p_sum_number_of_changes = 0
+
+    overall_an_vs_gt_bb_min_iou = 2
+    overall_an_vs_gt_bb_max_iou = -1
+    overall_an_vs_gt_bb_sum_iou = 0
+    overall_an_vs_gt_bb_min_percentage_area_change = 200
+    overall_an_vs_gt_bb_max_percentage_area_change = -1
+    overall_an_vs_gt_bb_sum_percentage_area_change = 0
+    overall_an_vs_gt_bb_min_number_of_changes = 10000
+    overall_an_vs_gt_bb_max_number_of_changes = -1
+    overall_an_vs_gt_bb_sum_number_of_changes = 0
+    overall_an_vs_gt_p_min_iou = 2
+    overall_an_vs_gt_p_max_iou = -1
+    overall_an_vs_gt_p_sum_iou = 0
+    overall_an_vs_gt_p_min_percentage_area_change = 200
+    overall_an_vs_gt_p_max_percentage_area_change = -1
+    overall_an_vs_gt_p_sum_percentage_area_change = 0
+    overall_an_vs_gt_p_min_number_of_changes = 10000
+    overall_an_vs_gt_p_max_number_of_changes = -1
+    overall_an_vs_gt_p_sum_number_of_changes = 0
+
+    overall_an_vs_pd_bb_min_iou = 2
+    overall_an_vs_pd_bb_max_iou = -1
+    overall_an_vs_pd_bb_sum_iou = 0
+    overall_an_vs_pd_bb_min_percentage_area_change = 200
+    overall_an_vs_pd_bb_max_percentage_area_change = -1
+    overall_an_vs_pd_bb_sum_percentage_area_change = 0
+    overall_an_vs_pd_bb_min_number_of_changes = 10000
+    overall_an_vs_pd_bb_max_number_of_changes = -1
+    overall_an_vs_pd_bb_sum_number_of_changes = 0
+    overall_an_vs_pd_p_min_iou = 2
+    overall_an_vs_pd_p_max_iou = -1
+    overall_an_vs_pd_p_sum_iou = 0
+    overall_an_vs_pd_p_min_percentage_area_change = 200
+    overall_an_vs_pd_p_max_percentage_area_change = -1
+    overall_an_vs_pd_p_sum_percentage_area_change = 0
+    overall_an_vs_pd_p_min_number_of_changes = 10000
+    overall_an_vs_pd_p_max_number_of_changes = -1
+    overall_an_vs_pd_p_sum_number_of_changes = 0
+    overall_count = 0
+
+    for class_id, class_data in data.items():
+        pd_vs_gt_bb_min_iou = 2
+        pd_vs_gt_bb_max_iou = -1
+        pd_vs_gt_bb_sum_iou = 0
+        pd_vs_gt_bb_min_percentage_area_change = 200
+        pd_vs_gt_bb_max_percentage_area_change = -1
+        pd_vs_gt_bb_sum_percentage_area_change = 0
+        pd_vs_gt_bb_min_number_of_changes = 10000
+        pd_vs_gt_bb_max_number_of_changes = -1
+        pd_vs_gt_bb_sum_number_of_changes = 0
+        pd_vs_gt_p_min_iou = 2
+        pd_vs_gt_p_max_iou = -1
+        pd_vs_gt_p_sum_iou = 0
+        pd_vs_gt_p_min_percentage_area_change = 200
+        pd_vs_gt_p_max_percentage_area_change = -1
+        pd_vs_gt_p_sum_percentage_area_change = 0
+        pd_vs_gt_p_min_number_of_changes = 10000
+        pd_vs_gt_p_max_number_of_changes = -1
+        pd_vs_gt_p_sum_number_of_changes = 0
+
+        an_vs_gt_bb_min_iou = 2
+        an_vs_gt_bb_max_iou = -1
+        an_vs_gt_bb_sum_iou = 0
+        an_vs_gt_bb_min_percentage_area_change = 200
+        an_vs_gt_bb_max_percentage_area_change = -1
+        an_vs_gt_bb_sum_percentage_area_change = 0
+        an_vs_gt_bb_min_number_of_changes = 10000
+        an_vs_gt_bb_max_number_of_changes = -1
+        an_vs_gt_bb_sum_number_of_changes = 0
+        an_vs_gt_p_min_iou = 2
+        an_vs_gt_p_max_iou = -1
+        an_vs_gt_p_sum_iou = 0
+        an_vs_gt_p_min_percentage_area_change = 200
+        an_vs_gt_p_max_percentage_area_change = -1
+        an_vs_gt_p_sum_percentage_area_change = 0
+        an_vs_gt_p_min_number_of_changes = 10000
+        an_vs_gt_p_max_number_of_changes = -1
+        an_vs_gt_p_sum_number_of_changes = 0
+
+        an_vs_pd_bb_min_iou = 2
+        an_vs_pd_bb_max_iou = -1
+        an_vs_pd_bb_sum_iou = 0
+        an_vs_pd_bb_min_percentage_area_change = 200
+        an_vs_pd_bb_max_percentage_area_change = -1
+        an_vs_pd_bb_sum_percentage_area_change = 0
+        an_vs_pd_bb_min_number_of_changes = 10000
+        an_vs_pd_bb_max_number_of_changes = -1
+        an_vs_pd_bb_sum_number_of_changes = 0
+        an_vs_pd_p_min_iou = 2
+        an_vs_pd_p_max_iou = -1
+        an_vs_pd_p_sum_iou = 0
+        an_vs_pd_p_min_percentage_area_change = 200
+        an_vs_pd_p_max_percentage_area_change = -1
+        an_vs_pd_p_sum_percentage_area_change = 0
+        an_vs_pd_p_min_number_of_changes = 10000
+        an_vs_pd_p_max_number_of_changes = -1
+        an_vs_pd_p_sum_number_of_changes = 0
+        count = 0
+
+        for _, image_data in class_data.items():
+            count += 1
+            overall_count += 1
+            metrics = image_data.get("metrics")
+            pd_vs_gt = metrics.get("pd_vs_gt")
+            pd_vs_gt_bb_min_iou = min(pd_vs_gt.get("bb_iou"), pd_vs_gt_bb_min_iou)
+            pd_vs_gt_bb_max_iou = max(pd_vs_gt.get("bb_iou"), pd_vs_gt_bb_max_iou)
+            pd_vs_gt_bb_sum_iou += pd_vs_gt.get("bb_iou")
+            pd_vs_gt_bb_min_percentage_area_change = min(pd_vs_gt.get("bb_percentage_area_change"), pd_vs_gt_bb_min_percentage_area_change)
+            pd_vs_gt_bb_max_percentage_area_change = max(pd_vs_gt.get("bb_percentage_area_change"), pd_vs_gt_bb_max_percentage_area_change)
+            pd_vs_gt_bb_sum_percentage_area_change += pd_vs_gt.get("bb_percentage_area_change")
+            pd_vs_gt_bb_min_number_of_changes = min(pd_vs_gt.get("bb_number_of_changes"), pd_vs_gt_bb_min_number_of_changes)
+            pd_vs_gt_bb_max_number_of_changes = max(pd_vs_gt.get("bb_number_of_changes"), pd_vs_gt_bb_max_number_of_changes)
+            pd_vs_gt_bb_sum_number_of_changes += pd_vs_gt.get("bb_number_of_changes")
+            pd_vs_gt_p_min_iou = min(pd_vs_gt.get("p_iou"), pd_vs_gt_p_min_iou)
+            pd_vs_gt_p_max_iou = max(pd_vs_gt.get("p_iou"), pd_vs_gt_p_max_iou)
+            pd_vs_gt_p_sum_iou += pd_vs_gt.get("p_iou")
+            pd_vs_gt_p_min_percentage_area_change = min(pd_vs_gt.get("p_percentage_area_change"), pd_vs_gt_p_min_percentage_area_change)
+            pd_vs_gt_p_max_percentage_area_change = max(pd_vs_gt.get("p_percentage_area_change"), pd_vs_gt_p_max_percentage_area_change)
+            pd_vs_gt_p_sum_percentage_area_change += pd_vs_gt.get("p_percentage_area_change")
+            pd_vs_gt_p_min_number_of_changes = min(pd_vs_gt.get("p_number_of_changes"), pd_vs_gt_p_min_number_of_changes)
+            pd_vs_gt_p_max_number_of_changes = max(pd_vs_gt.get("p_number_of_changes"), pd_vs_gt_p_max_number_of_changes)
+            pd_vs_gt_p_sum_number_of_changes += pd_vs_gt.get("p_number_of_changes")
+
+            overall_pd_vs_gt_bb_min_iou = min(pd_vs_gt.get("bb_iou"), overall_pd_vs_gt_bb_min_iou)
+            overall_pd_vs_gt_bb_max_iou = max(pd_vs_gt.get("bb_iou"), overall_pd_vs_gt_bb_max_iou)
+            overall_pd_vs_gt_bb_sum_iou += pd_vs_gt.get("bb_iou")
+            overall_pd_vs_gt_bb_min_percentage_area_change = min(pd_vs_gt.get("bb_percentage_area_change"), overall_pd_vs_gt_bb_min_percentage_area_change)
+            overall_pd_vs_gt_bb_max_percentage_area_change = max(pd_vs_gt.get("bb_percentage_area_change"), overall_pd_vs_gt_bb_max_percentage_area_change)
+            overall_pd_vs_gt_bb_sum_percentage_area_change += pd_vs_gt.get("bb_percentage_area_change")
+            overall_pd_vs_gt_bb_min_number_of_changes = min(pd_vs_gt.get("bb_number_of_changes"), overall_pd_vs_gt_bb_min_number_of_changes)
+            overall_pd_vs_gt_bb_max_number_of_changes = max(pd_vs_gt.get("bb_number_of_changes"), overall_pd_vs_gt_bb_max_number_of_changes)
+            overall_pd_vs_gt_bb_sum_number_of_changes += pd_vs_gt.get("bb_number_of_changes")
+            overall_pd_vs_gt_p_min_iou = min(pd_vs_gt.get("p_iou"), overall_pd_vs_gt_p_min_iou)
+            overall_pd_vs_gt_p_max_iou = max(pd_vs_gt.get("p_iou"), overall_pd_vs_gt_p_max_iou)
+            overall_pd_vs_gt_p_sum_iou += pd_vs_gt.get("p_iou")
+            overall_pd_vs_gt_p_min_percentage_area_change = min(pd_vs_gt.get("p_percentage_area_change"), overall_pd_vs_gt_p_min_percentage_area_change)
+            overall_pd_vs_gt_p_max_percentage_area_change = max(pd_vs_gt.get("p_percentage_area_change"), overall_pd_vs_gt_p_max_percentage_area_change)
+            overall_pd_vs_gt_p_sum_percentage_area_change += pd_vs_gt.get("p_percentage_area_change")
+            overall_pd_vs_gt_p_min_number_of_changes = min(pd_vs_gt.get("p_number_of_changes"), overall_pd_vs_gt_p_min_number_of_changes)
+            overall_pd_vs_gt_p_max_number_of_changes = max(pd_vs_gt.get("p_number_of_changes"), overall_pd_vs_gt_p_max_number_of_changes)
+            overall_pd_vs_gt_p_sum_number_of_changes += pd_vs_gt.get("p_number_of_changes")
+
+            an_vs_gt = metrics.get("an_vs_gt")
+            an_vs_gt_bb_min_iou = min(an_vs_gt.get("bb_iou"), an_vs_gt_bb_min_iou)
+            an_vs_gt_bb_max_iou = max(an_vs_gt.get("bb_iou"), an_vs_gt_bb_max_iou)
+            an_vs_gt_bb_sum_iou += an_vs_gt.get("bb_iou")
+            an_vs_gt_bb_min_percentage_area_change = min(an_vs_gt.get("bb_percentage_area_change"), an_vs_gt_bb_min_percentage_area_change)
+            an_vs_gt_bb_max_percentage_area_change = max(an_vs_gt.get("bb_percentage_area_change"), an_vs_gt_bb_max_percentage_area_change)
+            an_vs_gt_bb_sum_percentage_area_change += an_vs_gt.get("bb_percentage_area_change")
+            an_vs_gt_bb_min_number_of_changes = min(an_vs_gt.get("bb_number_of_changes"), an_vs_gt_bb_min_number_of_changes)
+            an_vs_gt_bb_max_number_of_changes = max(an_vs_gt.get("bb_number_of_changes"), an_vs_gt_bb_max_number_of_changes)
+            an_vs_gt_bb_sum_number_of_changes += an_vs_gt.get("bb_number_of_changes")
+            an_vs_gt_p_min_iou = min(an_vs_gt.get("p_iou"), an_vs_gt_p_min_iou)
+            an_vs_gt_p_max_iou = max(an_vs_gt.get("p_iou"), an_vs_gt_p_max_iou)
+            an_vs_gt_p_sum_iou += an_vs_gt.get("p_iou")
+            an_vs_gt_p_min_percentage_area_change = min(an_vs_gt.get("p_percentage_area_change"), an_vs_gt_p_min_percentage_area_change)
+            an_vs_gt_p_max_percentage_area_change = max(an_vs_gt.get("p_percentage_area_change"), an_vs_gt_p_max_percentage_area_change)
+            an_vs_gt_p_sum_percentage_area_change += an_vs_gt.get("p_percentage_area_change")
+            an_vs_gt_p_min_number_of_changes = min(an_vs_gt.get("p_number_of_changes"), an_vs_gt_p_min_number_of_changes)
+            an_vs_gt_p_max_number_of_changes = max(an_vs_gt.get("p_number_of_changes"), an_vs_gt_p_max_number_of_changes)
+            an_vs_gt_p_sum_number_of_changes += an_vs_gt.get("p_number_of_changes")
+
+            overall_an_vs_gt_bb_min_iou = min(an_vs_gt.get("bb_iou"), overall_an_vs_gt_bb_min_iou)
+            overall_an_vs_gt_bb_max_iou = max(an_vs_gt.get("bb_iou"), overall_an_vs_gt_bb_max_iou)
+            overall_an_vs_gt_bb_sum_iou += an_vs_gt.get("bb_iou")
+            overall_an_vs_gt_bb_min_percentage_area_change = min(an_vs_gt.get("bb_percentage_area_change"), overall_an_vs_gt_bb_min_percentage_area_change)
+            overall_an_vs_gt_bb_max_percentage_area_change = max(an_vs_gt.get("bb_percentage_area_change"), overall_an_vs_gt_bb_max_percentage_area_change)
+            overall_an_vs_gt_bb_sum_percentage_area_change += an_vs_gt.get("bb_percentage_area_change")
+            overall_an_vs_gt_bb_min_number_of_changes = min(an_vs_gt.get("bb_number_of_changes"), overall_an_vs_gt_bb_min_number_of_changes)
+            overall_an_vs_gt_bb_max_number_of_changes = max(an_vs_gt.get("bb_number_of_changes"), overall_an_vs_gt_bb_max_number_of_changes)
+            overall_an_vs_gt_bb_sum_number_of_changes += an_vs_gt.get("bb_number_of_changes")
+            overall_an_vs_gt_p_min_iou = min(an_vs_gt.get("p_iou"), overall_an_vs_gt_p_min_iou)
+            overall_an_vs_gt_p_max_iou = max(an_vs_gt.get("p_iou"), overall_an_vs_gt_p_max_iou)
+            overall_an_vs_gt_p_sum_iou += an_vs_gt.get("p_iou")
+            overall_an_vs_gt_p_min_percentage_area_change = min(an_vs_gt.get("p_percentage_area_change"), overall_an_vs_gt_p_min_percentage_area_change)
+            overall_an_vs_gt_p_max_percentage_area_change = max(an_vs_gt.get("p_percentage_area_change"), overall_an_vs_gt_p_max_percentage_area_change)
+            overall_an_vs_gt_p_sum_percentage_area_change += an_vs_gt.get("p_percentage_area_change")
+            overall_an_vs_gt_p_min_number_of_changes = min(an_vs_gt.get("p_number_of_changes"), overall_an_vs_gt_p_min_number_of_changes)
+            overall_an_vs_gt_p_max_number_of_changes = max(an_vs_gt.get("p_number_of_changes"), overall_an_vs_gt_p_max_number_of_changes)
+            overall_an_vs_gt_p_sum_number_of_changes += an_vs_gt.get("p_number_of_changes")
+
+            an_vs_pd = metrics.get("an_vs_pd")
+            an_vs_pd_bb_min_iou = min(an_vs_pd.get("bb_iou"), an_vs_pd_bb_min_iou)
+            an_vs_pd_bb_max_iou = max(an_vs_pd.get("bb_iou"), an_vs_pd_bb_max_iou)
+            an_vs_pd_bb_sum_iou += an_vs_pd.get("bb_iou")
+            an_vs_pd_bb_min_percentage_area_change = min(an_vs_pd.get("bb_percentage_area_change"), an_vs_pd_bb_min_percentage_area_change)
+            an_vs_pd_bb_max_percentage_area_change = max(an_vs_pd.get("bb_percentage_area_change"), an_vs_pd_bb_max_percentage_area_change)
+            an_vs_pd_bb_sum_percentage_area_change += an_vs_pd.get("bb_percentage_area_change")
+            an_vs_pd_bb_min_number_of_changes = min(an_vs_pd.get("bb_number_of_changes"), an_vs_pd_bb_min_number_of_changes)
+            an_vs_pd_bb_max_number_of_changes = max(an_vs_pd.get("bb_number_of_changes"), an_vs_pd_bb_max_number_of_changes)
+            an_vs_pd_bb_sum_number_of_changes += an_vs_pd.get("bb_number_of_changes")
+            an_vs_pd_p_min_iou = min(an_vs_pd.get("p_iou"), an_vs_pd_p_min_iou)
+            an_vs_pd_p_max_iou = max(an_vs_pd.get("p_iou"), an_vs_pd_p_max_iou)
+            an_vs_pd_p_sum_iou += an_vs_pd.get("p_iou")
+            an_vs_pd_p_min_percentage_area_change = min(an_vs_pd.get("p_percentage_area_change"), an_vs_pd_p_min_percentage_area_change)
+            an_vs_pd_p_max_percentage_area_change = max(an_vs_pd.get("p_percentage_area_change"), an_vs_pd_p_max_percentage_area_change)
+            an_vs_pd_p_sum_percentage_area_change += an_vs_pd.get("p_percentage_area_change")
+            an_vs_pd_p_min_number_of_changes = min(an_vs_pd.get("p_number_of_changes"), an_vs_pd_p_min_number_of_changes)
+            an_vs_pd_p_max_number_of_changes = max(an_vs_pd.get("p_number_of_changes"), an_vs_pd_p_max_number_of_changes)
+            an_vs_pd_p_sum_number_of_changes += an_vs_pd.get("p_number_of_changes")
+
+            overall_an_vs_pd_bb_min_iou = min(an_vs_pd.get("bb_iou"), overall_an_vs_pd_bb_min_iou)
+            overall_an_vs_pd_bb_max_iou = max(an_vs_pd.get("bb_iou"), overall_an_vs_pd_bb_max_iou)
+            overall_an_vs_pd_bb_sum_iou += an_vs_pd.get("bb_iou")
+            overall_an_vs_pd_bb_min_percentage_area_change = min(an_vs_pd.get("bb_percentage_area_change"), overall_an_vs_pd_bb_min_percentage_area_change)
+            overall_an_vs_pd_bb_max_percentage_area_change = max(an_vs_pd.get("bb_percentage_area_change"), overall_an_vs_pd_bb_max_percentage_area_change)
+            overall_an_vs_pd_bb_sum_percentage_area_change += an_vs_pd.get("bb_percentage_area_change")
+            overall_an_vs_pd_bb_min_number_of_changes = min(an_vs_pd.get("bb_number_of_changes"), overall_an_vs_pd_bb_min_number_of_changes)
+            overall_an_vs_pd_bb_max_number_of_changes = max(an_vs_pd.get("bb_number_of_changes"), overall_an_vs_pd_bb_max_number_of_changes)
+            overall_an_vs_pd_bb_sum_number_of_changes += an_vs_pd.get("bb_number_of_changes")
+            overall_an_vs_pd_p_min_iou = min(an_vs_pd.get("p_iou"), overall_an_vs_pd_p_min_iou)
+            overall_an_vs_pd_p_max_iou = max(an_vs_pd.get("p_iou"), overall_an_vs_pd_p_max_iou)
+            overall_an_vs_pd_p_sum_iou += an_vs_pd.get("p_iou")
+            overall_an_vs_pd_p_min_percentage_area_change = min(an_vs_pd.get("p_percentage_area_change"), overall_an_vs_pd_p_min_percentage_area_change)
+            overall_an_vs_pd_p_max_percentage_area_change = max(an_vs_pd.get("p_percentage_area_change"), overall_an_vs_pd_p_max_percentage_area_change)
+            overall_an_vs_pd_p_sum_percentage_area_change += an_vs_pd.get("p_percentage_area_change")
+            overall_an_vs_pd_p_min_number_of_changes = min(an_vs_pd.get("p_number_of_changes"), overall_an_vs_pd_p_min_number_of_changes)
+            overall_an_vs_pd_p_max_number_of_changes = max(an_vs_pd.get("p_number_of_changes"), overall_an_vs_pd_p_max_number_of_changes)
+            overall_an_vs_pd_p_sum_number_of_changes += an_vs_pd.get("p_number_of_changes")
+
+        if count > 0:
+            print(f"Statistics for class id: {class_id}")
+            print(f"pd_vs_gt bounding box iou, min = {pd_vs_gt_bb_min_iou}, max = {pd_vs_gt_bb_max_iou}, avg = {pd_vs_gt_bb_sum_iou/count}")
+            print(f"pd_vs_gt bounding box percentage area change, min = {pd_vs_gt_bb_min_percentage_area_change}, max = {pd_vs_gt_bb_max_percentage_area_change}, avg = {pd_vs_gt_bb_sum_percentage_area_change/count}")
+            print(f"pd_vs_gt bounding box number of changes, min = {pd_vs_gt_bb_min_number_of_changes}, max = {pd_vs_gt_bb_max_number_of_changes}, avg = {pd_vs_gt_bb_sum_number_of_changes/count}")
+            print(f"pd_vs_gt polygon iou, min = {pd_vs_gt_p_min_iou}, max = {pd_vs_gt_p_max_iou}, avg = {pd_vs_gt_p_sum_iou/count}")
+            print(f"pd_vs_gt polygon percentage area change, min = {pd_vs_gt_p_min_percentage_area_change}, max = {pd_vs_gt_p_max_percentage_area_change}, avg = {pd_vs_gt_p_sum_percentage_area_change/count}")
+            print(f"pd_vs_gt polygon number of changes, min = {pd_vs_gt_p_min_number_of_changes}, max = {pd_vs_gt_p_max_number_of_changes}, avg = {pd_vs_gt_p_sum_number_of_changes/count}")
+
+            print(f"an_vs_gt bounding box iou, min = {an_vs_gt_bb_min_iou}, max = {an_vs_gt_bb_max_iou}, avg = {an_vs_gt_bb_sum_iou/count}")
+            print(f"an_vs_gt bounding box percentage area change, min = {an_vs_gt_bb_min_percentage_area_change}, max = {an_vs_gt_bb_max_percentage_area_change}, avg = {an_vs_gt_bb_sum_percentage_area_change/count}")
+            print(f"an_vs_gt bounding box number of changes, min = {an_vs_gt_bb_min_number_of_changes}, max = {an_vs_gt_bb_max_number_of_changes}, avg = {an_vs_gt_bb_sum_number_of_changes/count}")
+            print(f"an_vs_gt polygon iou, min = {an_vs_gt_p_min_iou}, max = {an_vs_gt_p_max_iou}, avg = {an_vs_gt_p_sum_iou/count}")
+            print(f"an_vs_gt polygon percentage area change, min = {an_vs_gt_p_min_percentage_area_change}, max = {an_vs_gt_p_max_percentage_area_change}, avg = {an_vs_gt_p_sum_percentage_area_change/count}")
+            print(f"an_vs_gt polygon number of changes, min = {an_vs_gt_p_min_number_of_changes}, max = {an_vs_gt_p_max_number_of_changes}, avg = {an_vs_gt_p_sum_number_of_changes/count}")
+
+            print(f"an_vs_pd bounding box iou, min = {an_vs_pd_bb_min_iou}, max = {an_vs_pd_bb_max_iou}, avg = {an_vs_pd_bb_sum_iou/count}")
+            print(f"an_vs_pd bounding box percentage area change, min = {an_vs_pd_bb_min_percentage_area_change}, max = {an_vs_pd_bb_max_percentage_area_change}, avg = {an_vs_pd_bb_sum_percentage_area_change/count}")
+            print(f"an_vs_pd bounding box number of changes, min = {an_vs_pd_bb_min_number_of_changes}, max = {an_vs_pd_bb_max_number_of_changes}, avg = {an_vs_pd_bb_sum_number_of_changes/count}")
+            print(f"an_vs_pd polygon iou, min = {an_vs_pd_p_min_iou}, max = {an_vs_pd_p_max_iou}, avg = {an_vs_pd_p_sum_iou/count}")
+            print(f"an_vs_pd polygon percentage area change, min = {an_vs_pd_p_min_percentage_area_change}, max = {an_vs_pd_p_max_percentage_area_change}, avg = {an_vs_pd_p_sum_percentage_area_change/count}")
+            print(f"an_vs_pd polygon number of changes, min = {an_vs_pd_p_min_number_of_changes}, max = {an_vs_pd_p_max_number_of_changes}, avg = {an_vs_pd_p_sum_number_of_changes/count}")
+
+    if overall_count > 0:
+        print(f"Statistics for overall:")
+        print(f"overall pd_vs_gt bounding box iou, min = {overall_pd_vs_gt_bb_min_iou}, max = {overall_pd_vs_gt_bb_max_iou}, avg = {overall_pd_vs_gt_bb_sum_iou/overall_count}")
+        print(f"overall pd_vs_gt bounding box percentage area change, min = {overall_pd_vs_gt_bb_min_percentage_area_change}, max = {overall_pd_vs_gt_bb_max_percentage_area_change}, avg = {overall_pd_vs_gt_bb_sum_percentage_area_change/overall_count}")
+        print(f"overall pd_vs_gt bounding box number of changes, min = {overall_pd_vs_gt_bb_min_number_of_changes}, max = {overall_pd_vs_gt_bb_max_number_of_changes}, avg = {overall_pd_vs_gt_bb_sum_number_of_changes/overall_count}")
+        print(f"overall pd_vs_gt polygon iou, min = {overall_pd_vs_gt_p_min_iou}, max = {overall_pd_vs_gt_p_max_iou}, avg = {overall_pd_vs_gt_p_sum_iou/overall_count}")
+        print(f"overall pd_vs_gt polygon percentage area change, min = {overall_pd_vs_gt_p_min_percentage_area_change}, max = {overall_pd_vs_gt_p_max_percentage_area_change}, avg = {overall_pd_vs_gt_p_sum_percentage_area_change/overall_count}")
+        print(f"overall pd_vs_gt polygon number of changes, min = {overall_pd_vs_gt_p_min_number_of_changes}, max = {overall_pd_vs_gt_p_max_number_of_changes}, avg = {overall_pd_vs_gt_p_sum_number_of_changes/overall_count}")
+
+        print(f"overall an_vs_gt bounding box iou, min = {overall_an_vs_gt_bb_min_iou}, max = {overall_an_vs_gt_bb_max_iou}, avg = {overall_an_vs_gt_bb_sum_iou/overall_count}")
+        print(f"overall an_vs_gt bounding box percentage area change, min = {overall_an_vs_gt_bb_min_percentage_area_change}, max = {overall_an_vs_gt_bb_max_percentage_area_change}, avg = {overall_an_vs_gt_bb_sum_percentage_area_change/overall_count}")
+        print(f"overall an_vs_gt bounding box number of changes, min = {overall_an_vs_gt_bb_min_number_of_changes}, max = {overall_an_vs_gt_bb_max_number_of_changes}, avg = {overall_an_vs_gt_bb_sum_number_of_changes/overall_count}")
+        print(f"overall an_vs_gt polygon iou, min = {overall_an_vs_gt_p_min_iou}, max = {overall_an_vs_gt_p_max_iou}, avg = {overall_an_vs_gt_p_sum_iou/overall_count}")
+        print(f"overall an_vs_gt polygon percentage area change, min = {overall_an_vs_gt_p_min_percentage_area_change}, max = {overall_an_vs_gt_p_max_percentage_area_change}, avg = {overall_an_vs_gt_p_sum_percentage_area_change/overall_count}")
+        print(f"overall an_vs_gt polygon number of changes, min = {overall_an_vs_gt_p_min_number_of_changes}, max = {overall_an_vs_gt_p_max_number_of_changes}, avg = {overall_an_vs_gt_p_sum_number_of_changes/overall_count}")
+
+        print(f"overall an_vs_pd bounding box iou, min = {overall_an_vs_pd_bb_min_iou}, max = {overall_an_vs_pd_bb_max_iou}, avg = {overall_an_vs_pd_bb_sum_iou/overall_count}")
+        print(f"overall an_vs_pd bounding box percentage area change, min = {overall_an_vs_pd_bb_min_percentage_area_change}, max = {overall_an_vs_pd_bb_max_percentage_area_change}, avg = {overall_an_vs_pd_bb_sum_percentage_area_change/overall_count}")
+        print(f"overall an_vs_pd bounding box number of changes, min = {overall_an_vs_pd_bb_min_number_of_changes}, max = {overall_an_vs_pd_bb_max_number_of_changes}, avg = {overall_an_vs_pd_bb_sum_number_of_changes/overall_count}")
+        print(f"overall an_vs_pd polygon iou, min = {overall_an_vs_pd_p_min_iou}, max = {overall_an_vs_pd_p_max_iou}, avg = {overall_an_vs_pd_p_sum_iou/overall_count}")
+        print(f"overall an_vs_pd polygon percentage area change, min = {overall_an_vs_pd_p_min_percentage_area_change}, max = {overall_an_vs_pd_p_max_percentage_area_change}, avg = {overall_an_vs_pd_p_sum_percentage_area_change/overall_count}")
+        print(f"overall an_vs_pd polygon number of changes, min = {overall_an_vs_pd_p_min_number_of_changes}, max = {overall_an_vs_pd_p_max_number_of_changes}, avg = {overall_an_vs_pd_p_sum_number_of_changes/overall_count}")
+
 def get_polygon_iou_helper(req: GetPolygonMetricsRequest):
     ground_truth_points = [tuple(x) for x in req.ground_truth_polygon]
     predicted_points = [tuple(x) for x in req.predicted_polygon]
@@ -266,7 +553,7 @@ def get_polygon_percentage_area_change_helper(req: GetPolygonMetricsRequest):
     predicted_points = [tuple(x) for x in req.predicted_polygon]
     ground_truth_polygon = Polygon(ground_truth_points)
     predicted_polygon = Polygon(predicted_points)
-    percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area) / ground_truth_polygon.area
+    percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area)*100 / ground_truth_polygon.area
 
     return percentage_area_change
 
@@ -280,7 +567,7 @@ def get_bounding_box_percentage_area_change_helper(req: GetBoundingBoxMetricsReq
 
     ground_truth_polygon = Polygon(ground_truth_points)
     predicted_polygon = Polygon(predicted_points)
-    percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area) / ground_truth_polygon.area
+    percentage_area_change = abs(ground_truth_polygon.area - predicted_polygon.area)*100 / ground_truth_polygon.area
 
     return percentage_area_change
 
