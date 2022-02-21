@@ -142,7 +142,7 @@ def submit_result_helper(req: SubmitResultRequest):
         file_name = os.path.splitext(req.image_file_name)[0]
         # coco image id is a number
         if file_name.isnumeric():
-            gts = coco_utils.load_annotations(int(), req.result.object_class)
+            gts = coco_utils.load_annotations(int(file_name), req.result.object_class)
             ground_truth_bounding_box, ground_truth_polygon = find_best_ground_truth(gts, req.result.annotated_bounding_box)
             if ground_truth_bounding_box is not None:
                 image_data["ground_truth_bounding_box"] = ground_truth_bounding_box
