@@ -345,6 +345,7 @@ class AppController {
   submitAnnotationResultCallback(resp) {
     console.log(resp);
     this.appState.AnnotationState = AnnotationState.DONE;
+    alert("Annotations submitted successfully. You're all set!");
   }
 
 };
