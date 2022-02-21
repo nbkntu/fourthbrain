@@ -21,6 +21,8 @@ mask_rcnn = maskrcnn_model.MaskRCNNModel(
     i_logs='./mask_rcnn/logs/'
 )
 
+coco_utils = CocoUtils()
+
 class GetBoundingBoxesRequest(BaseModel):
     image_id: str
     image_file_name: str
@@ -108,7 +110,7 @@ def find_best_ground_truth(gts, ann_bbox):
                 mx = m
                 ground_truth_bounding_box = bbox
                 ground_truth_polygon = get_points(g.get("segmentation"))
-        
+
 
     return ground_truth_bounding_box, ground_truth_polygon
 
@@ -134,15 +136,17 @@ def submit_result_helper(req: SubmitResultRequest):
         image_data["annotated_bounding_box"] = req.result.annotated_bounding_box
         image_data["annotated_polygon"] = req.result.annotated_polygon
 
-        utils = CocoUtils()
-        gts = utils.load_annotations(int(os.path.splitext(req.image_file_name)[0]), req.result.object_class)
-        ground_truth_bounding_box, ground_truth_polygon = find_best_ground_truth(gts, req.result.annotated_bounding_box)
-        if ground_truth_bounding_box is not None:
-            image_data["ground_truth_bounding_box"] = ground_truth_bounding_box
-            image_data["ground_truth_polygon"] = ground_truth_polygon
-        else:
-            image_data["ground_truth_bounding_box"] = None
-            image_data["ground_truth_polygon"] = None
+
+        image_data["ground_truth_bounding_box"] = None
+        image_data["ground_truth_polygon"] = None
+        file_name = os.path.splitext(req.image_file_name)[0]
+        # coco image id is a number
+        if file_name.isnumeric():
+            gts = coco_utils.load_annotations(int(), req.result.object_class)
+            ground_truth_bounding_box, ground_truth_polygon = find_best_ground_truth(gts, req.result.annotated_bounding_box)
+            if ground_truth_bounding_box is not None:
+                image_data["ground_truth_bounding_box"] = ground_truth_bounding_box
+                image_data["ground_truth_polygon"] = ground_truth_polygon
 
         image_data["metrics"] = {"an_vs_gt": {}, "pd_vs_gt": {}, "an_vs_pd": {}}
         image_metrics = image_data.get("metrics")
@@ -602,7 +606,7 @@ def get_bounding_box_number_of_changes_helper(req: GetPolygonMetricsRequest):
     p_tl = [req.predicted_bounding_box[0], req.predicted_bounding_box[1]]
     p_br = [req.predicted_bounding_box[2], req.predicted_bounding_box[3]]
     pp = [[p_tl[0], p_tl[1]], [p_br[0], p_tl[1]], [p_br[0], p_br[1]], [p_tl[0], p_br[1]]]
-    
+
     count = 0
     for p in copy.deepcopy(pp):
         if p in copy.deepcopy(gtp):
