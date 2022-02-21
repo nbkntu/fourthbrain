@@ -55,9 +55,11 @@ class YoloV3Model:
             with urllib.request.urlopen(YOLOV3_COCO_MODEL_URL) as resp, open(i_weights, 'wb') as out:
                 shutil.copyfileobj(resp, out)
 
+    def get_class_name(self, class_name_id):
+        return self.class_names[class_name_id - 1];
 
     def process(self,
-                i_image_id: str, 
+                i_image_id: str,
                 i_image_path: str,
                 i_size=416,
                 i_output='./data/bounding_boxes.jpg'):
@@ -114,7 +116,7 @@ class YoloV3Model:
         # The indices of all boxes at start. We will redundant indices one by one.
         indices = np.arange(len(x1))
         for i,box in enumerate(boxes):
-            # Create temporary indices  
+            # Create temporary indices
             temp_indices = indices[indices!=i]
             # Find out the coordinates of the intersection box
             xx1 = np.maximum(box[0], boxes[temp_indices,0])
@@ -126,7 +128,7 @@ class YoloV3Model:
             h = np.maximum(0, yy2 - yy1 + 1)
             # compute the ratio of overlap
             overlap = (w * h) / areas[temp_indices]
-            # if the actual boungding box has an overlap bigger than treshold with any other box, remove it's index  
+            # if the actual boungding box has an overlap bigger than treshold with any other box, remove it's index
             if np.any(overlap) > overlapThresh:
                 indices = indices[indices != i]
         #return only the boxes at the remaining indices
