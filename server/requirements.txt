@@ -5,14 +5,14 @@ awsebcli==3.20.3
 botocore==1.23.49
 cachetools==5.0.0
 cement==2.8.2
-certifi==2021.10.8
+certifi>=2022.12.07
 charset-normalizer==2.0.11
 click==8.0.3
 colorama==0.4.3
 cycler==0.11.0
 fastapi
 fonttools==4.29.1
-future==0.16.0
+future>=0.18.2
 google-api-core==2.5.0
 google-auth
 google-cloud-core==2.2.2
@@ -57,7 +57,7 @@ shapely
 sniffio==1.2.0
 starlette==0.17.1
 termcolor==1.1.0
-tensorflow==2.7.2
+tensorflow>=2.8.4
 tensorflow-gpu
 typing_extensions==4.0.1
 urllib3==1.26.8
