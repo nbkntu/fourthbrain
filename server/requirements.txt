@@ -55,7 +55,7 @@ scikit-image==0.19.1
 scipy==1.6.2
 shapely
 sniffio==1.2.0
-starlette==0.17.1
+starlette>=0.25.0
 termcolor==1.1.0
 tensorflow>=2.8.4
 tensorflow-gpu
